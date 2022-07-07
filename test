@@ -1,0 +1,17 @@
+results of experiment HVM_: (IMM, 'generation_target': 10)
+                column       mean
+                   run   5.500000
+           util_line_1  90.141619
+       mean_ttt_line_1  13.342087
+       mean_mwt_line_1   4.170246
+      mean_sttt_line_1   9.171841
+            FGI_line_1   0.000000
+           util_line_2  89.887643
+       mean_ttt_line_2   6.300011
+       mean_mwt_line_2   0.000000
+      mean_sttt_line_2   6.300011
+            FGI_line_2   5.375781
+         mean_lateness -27.687363
+        mean_tardiness   0.486397
+mean_squared_tardiness   9.176324
+      percentage_tardy   0.023090
