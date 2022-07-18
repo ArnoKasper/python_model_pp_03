@@ -1,8 +1,7 @@
 class Order(object):
     def __init__(self,
                  simulation,
-                 identifier,
-                 attributes):
+                 identifier):
         """
         object having all attributes of the an flow item
         :param simulation: simulation object stored in simulation_model.py
@@ -10,19 +9,16 @@ class Order(object):
         """
         self.sim = simulation
         self.identifier = identifier
-        self.attributes = attributes
-        self.name = f"order_{self.attributes['name']}_{'%07d' % self.identifier}"
-        self.line = self.attributes['line']
-        self.requirements = self.attributes['requirements']
-        self.material_type = self.attributes['material_type']
-        self.item_name = self.attributes['name']
-        self.enter_inventory = self.attributes['enter_inventory']
+        self.attributes = self.sim.model_panel.order_attributes
+        self.name = f"order_{'%07d' % self.identifier}"
         self.materials = []
 
-        # give customized names
-        if self.item_name == 'customized':
-            requirements = self.requirements
+        # determine material requirement
+        if self.attributes["material_req"] == 'single_uniform':
+            requirements = self.sim.model_panel.material_types.copy()
             self.requirements = self.sim.random_generator.sample(requirements, 1)
+        else:
+            raise Exception("no valid material requirements technique selected")
 
         # data params
         self.entry_time = self.sim.env.now
@@ -30,8 +26,8 @@ class Order(object):
         self.release_time = 0
         self.pool_time = 0
         self.completion_time = 0
-        self.inventory_departure_time = 0
-        self.demand_time = 0
+        self.material_replenishment_time = 0
+        self.inventory_time = 0
 
         # pool params
         self.release = False
@@ -40,15 +36,15 @@ class Order(object):
         self.in_inventory = False
 
         # routing sequence params
-        if self.sim.model_panel.LINE_STRUCTURE[self.line]['routing_configuration'] in ["GFS", "PJS"]:
+        if self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] in ["GFS", "PJS"]:
             self.routing_sequence = self.sim.random_generator.sample(
-                self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT[self.line],
-                self.sim.random_generator.randint(1, len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT[self.line])))
+                self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT,
+                self.sim.random_generator.randint(1, len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)))
             # Sort the routing if necessary
-            if self.sim.model_panel.LINE_STRUCTURE[self.line]['routing_configuration'] == "GFS":
+            if self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] == "GFS":
                 self.routing_sequence.sort()  # GFS or PFS require sorted list of stations
-        elif self.sim.model_panel.LINE_STRUCTURE[self.line]['routing_configuration'] == "PFS":
-            self.routing_sequence = self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT[self.line].copy()
+        elif self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] == "PFS":
+            self.routing_sequence = self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT.copy()
         else:
             raise Exception("no valid manufacturing process selected")
 
@@ -62,7 +58,7 @@ class Order(object):
 
         # priority
         self.dispatching_priority = {}
-        for i, work_centre in enumerate(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT[self.line]):
+        for i, work_centre in enumerate(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT):
             self.dispatching_priority[work_centre] = 0
 
         # data collection variables
@@ -73,17 +69,17 @@ class Order(object):
         self.wc_state = {}  # tracks which machine was used
 
         for WC in self.routing_sequence:
-            if self.sim.model_panel.PROCESS_TIME_DISTRIBUTION[self.item_name] == "2_erlang_truncated":
+            if self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "2_erlang_truncated":
                 self.process_time[WC] = self.sim.general_functions.two_erlang_truncated(
-                    mean=self.sim.model_panel.MEAN_PROCESS_TIME[self.item_name]
+                    mean=self.sim.model_panel.MEAN_PROCESS_TIME
                 )
-            elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION[self.item_name] == "exponential":
+            elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "exponential":
                 self.process_time[WC] = self.sim.general_functions.exponential(
-                    mean=self.sim.model_panel.MEAN_PROCESS_TIME[self.item_name]
+                    mean=self.sim.model_panel.MEAN_PROCESS_TIME
                 )
-            elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION[self.item_name] == "uniform":
+            elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "uniform":
                 self.process_time[WC] = self.sim.general_functions.uniform(
-                    mean=self.sim.model_panel.MEAN_PROCESS_TIME[self.item_name]
+                    mean=self.sim.model_panel.MEAN_PROCESS_TIME
                 )
             else:
                 raise Exception("no valid process time distribution selected")
@@ -109,11 +105,16 @@ class Order(object):
         self.pool_priority = 0
         if self.sim.policy_panel.sequencing_rule in ["PRD"]:
             self.pool_priority = self.due_date - (len(self.routing_sequence) *
-                                                  self.sim.policy_panel.sequencing_rule_attributes[self.line])
+                                                  self.sim.policy_panel.sequencing_rule_attributes['PRD_k'])
+        return
 
-        # coupling params
-        self.coupling_priority = self.pool_priority
-        self.loose_couplings = []
+    def update_material_data(self):
+        if len(self.materials) > 0:
+            self.material_replenishment_time = self.materials[0].delivery_time - self.materials[0].entry_time
+            self.inventory_time = self.materials[0].allocation_time - self.materials[0].delivery_time
+        else:
+            self.material_replenishment_time = 0
+            self.inventory_time = 0
         return
 
     def __str__(self):
@@ -136,7 +137,13 @@ class Material(object):
         self.sim = simulation
         self.identifier = identifier
         self.attributes = attributes
+        self.type = self.attributes['name']
         self.name = f"material_{self.attributes['name']}_{'%07d' % self.identifier}"
+
+        self.entry_time = self.sim.env.now
+        self.delivery_time = self.sim.env.now
+        self.replenishment_time = 0
+        self.allocation_time = self.sim.env.now
 
     def __str__(self):
         return self.name

@@ -6,13 +6,9 @@ class DataCollection(object):
         self.sim = simulation
 
         # order params
-        self.order_output_counter = {}
-        self.order_input_counter = {}
-        self.accumulated_process_time = {}
-        for line in self.sim.model_panel.LINE_STRUCTURE.keys():
-            self.order_output_counter[line] = 0
-            self.order_input_counter[line] = 0
-            self.accumulated_process_time[line] = 0
+        self.order_output_counter = 0
+        self.order_input_counter = 0
+        self.accumulated_process_time = 0
 
         self.experiment_database = None
         self.order_list = list()
@@ -23,16 +19,17 @@ class DataCollection(object):
 
         # columns names
         self.columns_names_run = [
-                            'line',
                             'identifier',
                             'product_name',
                             'throughput_time',
-                            'inventory_time',
+                            'pool_time',
                             'material_waiting_time',
                             'shop_throughput_time',
                             'lateness',
                             'tardiness',
-                            'tardy'
+                            'tardy',
+                            'material_replenishment_time',
+                            'inventory_time'
                                 ]
         return
 
@@ -57,8 +54,7 @@ class DataCollection(object):
 
         # data processing finished. Update database new run
         self.order_list = list()
-        for line in self.sim.model_panel.LINE_STRUCTURE.keys():
-            self.accumulated_process_time[line] = 0
+        self.accumulated_process_time = 0
 
         self.demanded_items_counter = 0
         self.demanded_items_fulfilled = 0
@@ -77,24 +73,21 @@ class DataCollection(object):
         # generic measures
         # df['service_level'] = self.demanded_items_fulfilled / self.demanded_items_counter
 
-        # line specific measures
-        for line in self.sim.model_panel.LINE_STRUCTURE.keys():
-            df_run_line = df_run.loc[df_run['line'] == line]
-            # df[f"nr_flow_items_{line}"] = df_run_line.shape[0]
-            number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT[line]))
-            df[f"util_{line}"] = ((self.accumulated_process_time[line] * 100 / number_of_machines_in_process)
-                                 / self.sim.model_panel.RUN_TIME)
-            df[f"mean_ttt_{line}"] = df_run_line.loc[:, "throughput_time"].mean()
-            df[f"mean_mwt_{line}"] = df_run_line.loc[:, "material_waiting_time"].mean()
-            df[f"mean_sttt_{line}"] = df_run_line.loc[:, "shop_throughput_time"].mean()
-            df[f"FGI_{line}"] = df_run_line.loc[:, "inventory_time"].mean() / self.sim.model_panel.DEMAND_RATE
+        number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
+        df[f"utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
+                             / self.sim.model_panel.RUN_TIME)
+        df[f"mean_ttt"] = df_run.loc[:, "throughput_time"].mean()
+        df[f"mean_ptt"] = df_run.loc[:, "pool_time"].mean()
+        df[f"mean_sttt"] = df_run.loc[:, "shop_throughput_time"].mean()
+        df[f"mean_mat_av_t"] = df_run.loc[:, "material_waiting_time"].mean()
+        df[f'mean_mat_rep_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+        df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
 
         # due date
-        df_run_line = df_run.loc[df_run['line'] == 'line_1']
-        df["mean_lateness"] = df_run_line.loc[:, "lateness"].mean()
-        df["mean_tardiness"] = df_run_line.loc[:, "tardiness"].mean()
-        df["mean_squared_tardiness"] = (df_run_line.loc[:, "tardiness"] ** 2).mean()
-        df["percentage_tardy"] = df_run_line.loc[:, "tardy"].sum() / df_run.shape[0]
+        df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
+        df["mean_tardiness"] = df_run.loc[:, "tardiness"].mean()
+        df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
+        df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
 
         # save data from the run
         if self.experiment_database is None:

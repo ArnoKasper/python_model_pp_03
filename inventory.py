@@ -11,40 +11,25 @@ class Inventory(object):
         self.index_sorting_removal = 0
         self.index_order_object = 1
         self.index_priority = 2
-        self.items = self.sim.model_panel.items
-        self.BOM = self.sim.model_panel.BOM
-        self.dependencies = self.sim.model_panel.dependencies
+        self.materials = self.sim.model_panel.materials
 
-        # settings
-        self.allow_backorders = True
-        self.backorders = {}
-
-        self.initialize()
         return
-
-    def initialize(self):
-        if self.allow_backorders:
-            for item in self.items:
-                self.backorders[item] = []
 
     def put_in_inventory(self, order):
         inventory_item = self.inventory_item(order=order)
-        self.sim.model_panel.SKU[order.item_name].put(inventory_item)
+        self.sim.model_panel.SKU[order.type].put(inventory_item)
         # update state
         order.in_inventory = True
-        # control backorders
-        if self.allow_backorders:
-            self.control_backorders(item=order.item_name)
         # update as material has arrived
-        self.inventory_update_release(order=order)
+        self.inventory_update_release()
         return
 
     @staticmethod
     def inventory_item(order):
         inventory_item = [1, # removal integer
                           order,
-                          order.completion_time,
-                          order.item_name
+                          order.delivery_time,
+                          order.name
                           ]
         return inventory_item
 
@@ -54,11 +39,12 @@ class Inventory(object):
         :param work_center: work_center number indicating the number of the capacity source
         :return: void
         """
-        # update generation process
-        self.sim.generation.check_generation(item=item)
         # sort the stock keeping unit
         self.sim.model_panel.SKU[item].items.sort(key=itemgetter(self.index_sorting_removal))
         self.sim.model_panel.SKU[item].get()
+
+        # update generation process
+        self.sim.generation.check_generation(item_type=item)
         return
 
     def collect_materials(self, requirements):
@@ -71,6 +57,7 @@ class Inventory(object):
         for component in requirements:
             # pick component and remove from inventory
             material = self.get_inventory_item(item=component)
+            material.allocation_time = self.sim.env.now
             # update data and add to material list
             material_list.append(material)
         return material_list
@@ -81,14 +68,9 @@ class Inventory(object):
         item_list[self.index_sorting_removal] = 0
         self.remove_from_inventory(item=item)
         order = item_list[self.index_order_object]
-        # collect data
-        if order.enter_inventory:
-            order.inventory_departure_time = self.sim.env.now
-            order.demand_time = demand_time
-            self.sim.process.data_collection_final(order=order, line=order.line)
         return order
 
-    def material_availability_check(self, order, line):
+    def material_availability_check(self, order):
         """
         check of the materials are available
         :param requirements: list with the name of the materials that need to be collected
@@ -98,7 +80,7 @@ class Inventory(object):
         requirements = order.requirements
         if not len(requirements) == 0:
             # control inventories for requirements
-            if self.sim.policy_panel.material_allocation[line] == 'availability':
+            if self.sim.policy_panel.material_allocation == 'availability':
                 material_availability_dict = {}
                 for item in requirements:
                     # assume unique stock keeping unit for each item
@@ -123,22 +105,7 @@ class Inventory(object):
                 order.material_available_time = self.sim.env.now
             return True
 
-    def inventory_update_release(self, order):
-        initialize_release = self.dependencies[order.item_name]
-        for item, attributes in self.BOM.items():
-            if item in initialize_release:
-                line = attributes['line']
-                self.sim.release.activate_release(line=line)
+    def inventory_update_release(self):
+        self.sim.release.activate_release()
         return
 
-    def control_backorders(self, item):
-        if len(self.backorders[item]) > 0:
-            # pick backorders, assume FCFS
-            customer = self.backorders[item].pop(0)
-            delivered_order = self.get_inventory_item(item=item, demand_time=customer.customer_arrival_time)
-            customer.order.append(delivered_order)
-        return
-
-    def inventory_priority(self, item):
-        stock_levels = len(self.sim.model_panel.SKU[item].items)
-        return stock_levels / self.sim.policy_panel.generation_attributes[item]['generation_target']

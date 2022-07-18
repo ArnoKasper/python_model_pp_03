@@ -16,6 +16,7 @@ from generate import Generation
 from process import Process
 from release import Release
 from inventory import Inventory
+from supply import Supply
 
 
 class SimulationModel(object):
@@ -55,11 +56,12 @@ class SimulationModel(object):
         self.inventory: Inventory = Inventory(simulation=self)
 
         # import process
+        self.supplier: Supply = Supply(simulation=self)
         self.process: Process = Process(simulation=self)
 
         # initialize demand
         self.demand: Demand = Demand(simulation=self)
-        # self.demand_process = self.env.process(self.demand.generate_random_demand_exp(item='A'))
+        self.demand_process = None
 
         # initialize generation
         self.generation_process = {}
@@ -78,6 +80,8 @@ class SimulationModel(object):
             self.print_start_info()
         # start the generators
         self.generation.initialize_generation()
+
+        self.demand_process = self.env.process(self.demand.generate_random_arrival_exp())
 
         # start simulation
         sim_time = (self.model_panel.WARM_UP_PERIOD +
@@ -110,19 +114,22 @@ class SimulationModel(object):
                 self.print_run_info()
         return
 
-    def print_run_info(self) -> None:
+    def print_run_info(self):
         # vital simulation results are given
-        run_number = int(
-            self.env.now / (self.model_panel.WARM_UP_PERIOD + self.model_panel.RUN_TIME))
+        run_number = int(self.env.now / (self.model_panel.WARM_UP_PERIOD + self.model_panel.RUN_TIME))
         index = run_number - 1
-        # compute replication confidence
+        # statistics
+        statistics = self.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')
+        # print info
         try:
             if index == 0:
                 print(self.data.experiment_database.iloc[index:, ].to_string(
-                    index=False))
+                    index=False), end=' ')
+                print(statistics)
             else:
                 print('\n'.join(self.data.experiment_database.iloc[index:, ].to_string(
-                    index=False).split('\n')[1:]))
+                    index=False).split('\n')[1:]), end=' ')
+                print(statistics)
         except (KeyError, IndexError):
             print("could not print simulation results")
         return
@@ -133,7 +140,7 @@ class SimulationModel(object):
         confidence_int = stats.t.ppf(
             1 - 0.025, df=self.data.experiment_database.shape[0] - 1)
         confidence_int = confidence_int * \
-            (current_std_dev / np.sqrt(run_number))
+                         (current_std_dev / np.sqrt(run_number))
         lower_confidence = round(running_mean - confidence_int, 4)
         upper_confidence = '%.4f' % round(running_mean + confidence_int, 4)
         deviation = '%.4f' % round(

@@ -1,17 +1,32 @@
-results of experiment HVM_: (IMM, 'generation_target': 10)
+# constant due dates do not do that much
+- logic: sequence EDD or FCFS do not matter when each order gets the same dd
+
+results of experiment InnsbrückProject_: LC (DD: TWK)
                 column       mean
                    run   5.500000
-           util_line_1  90.141619
-       mean_ttt_line_1  13.342087
-       mean_mwt_line_1   4.170246
-      mean_sttt_line_1   9.171841
-            FGI_line_1   0.000000
-           util_line_2  89.887643
-       mean_ttt_line_2   6.300011
-       mean_mwt_line_2   0.000000
-      mean_sttt_line_2   6.300011
-            FGI_line_2   5.375781
-         mean_lateness -27.687363
-        mean_tardiness   0.486397
-mean_squared_tardiness   9.176324
-      percentage_tardy   0.023090
+           utilization  90.317385
+              mean_ttt  19.834298
+              mean_ptt   5.492112
+             mean_sttt  14.342186
+         mean_mat_av_t   5.492112
+        mean_mat_rep_t  15.114657
+        mean_mat_inv_t   4.529090
+         mean_lateness -15.252243
+        mean_tardiness   1.187165
+mean_squared_tardiness  19.263866
+      percentage_tardy   0.141303
+
+results of experiment InnsbrückProject_: IMM (DD: TWK)
+                column       mean
+                   run   5.500000
+           utilization  90.322247
+              mean_ttt  21.313376
+              mean_ptt   1.442795
+             mean_sttt  19.870581
+         mean_mat_av_t   1.442795
+        mean_mat_rep_t  15.037563
+        mean_mat_inv_t   4.610096
+         mean_lateness -13.769249
+        mean_tardiness   2.450267
+mean_squared_tardiness  50.360690
+      percentage_tardy   0.213415

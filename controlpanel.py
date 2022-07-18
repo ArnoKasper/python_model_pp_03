@@ -18,128 +18,78 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 1  # 00  # number of replications
-
-        # process and arrival times
-        self.AIMED_UTILIZATION: float = 0.9
-        self.ORDER_MEAN_PROCESS_TIME: float = 1
+        self.NUMBER_OF_RUNS: int = 10#0  # number of replications
 
         # manufacturing process and order characteristics
-        self.LINE_STRUCTURE = {'line_1': {'work_centres': 1,
-                                          'routing_configuration': 'PFS',
-                                          'release_technique': 'immediate'},
-                               'line_2': {"work_centres": 1,
-                                          'routing_configuration': 'PFS',
-                                          'release_technique': 'immediate'}
-                               }
+        self.SHOP_ATTRIBUTES = {"work_centres": 3,
+                                'routing_configuration': 'PFS'}
         # manufacturing system
-        self.MEAN_TIME_BETWEEN_ARRIVAL: Dict[...] = {}
-        self.MANUFACTURING_FLOOR_LAYOUT: Dict[...] = {}
-        self.WORK_CENTRES: Dict[...] = {}  # The manufacturing floor floor
+        self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
+        # make pool
+        self.POOLS: Pool = Pool(sim=self.sim,
+                                env=self.sim.env,
+                                id=f"pool"
+                                )
+        # make work centers
+        self.WORK_CENTRES: Dict[...] = {}
         self.QUEUES: Dict[...] = {}
-        self.POOLS: Dict[...] = {}
-        for line, attributes in self.LINE_STRUCTURE.items():
-            self.MANUFACTURING_FLOOR_LAYOUT[line]: List[str, ...] = []
-            # make line pool
-            self.POOLS[line]: Pool = Pool(sim=self.sim,
-                                          env=self.sim.env,
-                                          id=f"{line}"
-                                          )
-            # make work centers
-            self.WORK_CENTRES[line]: Dict[...] = {}
-            self.QUEUES[line]: Dict[...] = {}
-            for i in range(0, attributes["work_centres"]):
-                # construct layout
-                self.MANUFACTURING_FLOOR_LAYOUT[line].append(f'WC{i}')
-                # add machines
-                self.WORK_CENTRES[line][f'WC{i}']: Machine = Machine(sim=self.sim,
-                                                                     env=self.sim.env,
-                                                                     capacity_slots=1,
-                                                                     id=f"WC{i}"
-                                                                     )
-                # add queues
-                self.QUEUES[line][f'WC{i}']: Queue = Queue(sim=self.sim,
+        for i in range(0, self.SHOP_ATTRIBUTES["work_centres"]):
+            # construct layout
+            self.MANUFACTURING_FLOOR_LAYOUT.append(f'WC{i}')
+            # add machines
+            self.WORK_CENTRES[f'WC{i}']: Machine = Machine(sim=self.sim,
                                                            env=self.sim.env,
+                                                           capacity_slots=1,
                                                            id=f"WC{i}"
                                                            )
+            # add queues
+            self.QUEUES[f'WC{i}']: Queue = Queue(sim=self.sim,
+                                                 env=self.sim.env,
+                                                 id=f"WC{i}"
+                                                 )
 
-            # set interarrival time
-            self.MEAN_TIME_BETWEEN_ARRIVAL[line] = self.general_functions.arrival_time_calculator(
-                wc_and_flow_config=self.LINE_STRUCTURE[line]['routing_configuration'],
-                manufacturing_floor_layout=self.MANUFACTURING_FLOOR_LAYOUT[line],
-                aimed_utilization=self.AIMED_UTILIZATION,
-                mean_process_time=self.ORDER_MEAN_PROCESS_TIME,
-                number_of_machines=1)
+        # set inter arrival time
+        self.AIMED_UTILIZATION: float = 0.9
+        self.MEAN_PROCESS_TIME: float = 1
+        self.MEAN_TIME_BETWEEN_ARRIVAL = self.general_functions.arrival_time_calculator(
+            wc_and_flow_config=self.SHOP_ATTRIBUTES['routing_configuration'],
+            manufacturing_floor_layout=self.MANUFACTURING_FLOOR_LAYOUT,
+            aimed_utilization=self.AIMED_UTILIZATION,
+            mean_process_time=self.MEAN_PROCESS_TIME,
+            number_of_machines=1)
+        """
+        process time distributions
+            - 2_erlang_truncated
+            - exponential
+            - uniform
+        """
+        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated'
 
-        # bill of materials
-        self.component_items = ['A', 'B']
-        self.BOM = {"customized": {"name": "customized",
-                                   "material_type": 'customized',
-                                   "requirements": self.component_items,
-                                   'enter_inventory': False,
-                                   "generation": 'exponential',
-                                   'expected_mean': self.ORDER_MEAN_PROCESS_TIME,
-                                   "line": "line_1"}
-                    }
+        # orders
+        self.order_attributes = {"name": "customized",
+                                 "order_type": 'customized',
+                                 "material_req": "single_uniform",
+                                 'enter_inventory': False,
+                                 "generation": 'demand',
+                                 'expected_mean': self.MEAN_PROCESS_TIME}
 
-        item_mean_process_time = round(
-            self.MEAN_TIME_BETWEEN_ARRIVAL['line_1']/self.MEAN_TIME_BETWEEN_ARRIVAL['line_2'], 5)
-        component_item = {'name': '',
-                          "material_type": "end",
-                          "requirements": [],
-                          'enter_inventory': True,
-                          "generation": 'control_loop',
-                          'expected_mean': item_mean_process_time,
-                          "line": "line_2"}
-
-        # make BOM complete
-        for item in self.component_items:
-            component_item['name'] = item
-            self.BOM[item] = component_item.copy()
-
-        self.items = []
-        self.dependencies = None
-        self.build_dependencies()
-
-        # make item-specific stock keeping units (SKU)
+        # materials
         self.SKU: Dict[...] = {}
-        self.MEAN_PROCESS_TIME: Dict[...] = {}
-        self.PROCESS_TIME_DISTRIBUTION: Dict[...] = {}
-        self.STD_DEV_PROCESS_TIME: Dict[...] = {}
-        for item in self.BOM.keys():
-            self.MEAN_PROCESS_TIME[item] = self.BOM[item]['expected_mean']
-            self.PROCESS_TIME_DISTRIBUTION[item] = 'exponential'
-            self.STD_DEV_PROCESS_TIME[item] = 0.5
-            self.SKU[item]: Inventory = Inventory(sim=self.sim,
+        self.material_types = ['A', 'B']
+        self.materials = {}
+        self.expected_replenishment_time = 15
+        for type in self.material_types:
+            self.materials[type] = {'name': f'{type}',
+                                    'enter_inventory': True,
+                                    "generation": 'BSS',
+                                    'expected_lead_time': self.expected_replenishment_time}
+            self.SKU[type]: Inventory = Inventory(sim=self.sim,
                                                   env=self.sim.env,
-                                                  id=f"{item}"
+                                                  id=f"{type}"
                                                   )
 
-        # demand
-        """
-        demand types
-            - constant
-            - exponential
-            - exponential_quantity
-            - forecast (not implemented)
-        """
-        self.DEMAND_RATE: float = 0.9
-        self.DEMAND_TYPE: str = 'exponential'
-        return
-
-    def build_dependencies(self):
-        # get all items
-        for item, attributes in self.BOM.items():
-            self.items.append(item)
-        # make dependencies
-        dependencies = {}
-        for component in reversed(self.items):
-            dependencies[component] = []
-            for item, attributes in self.BOM.items():
-                # check if component is needed for product
-                if component in attributes['requirements']:
-                    dependencies[component].append(item)
-        self.dependencies = dependencies
+        self.DELIVERY = "supplier"
+        self.SUPPLY_DISTRIBUTION = 'exponential'
         return
 
 
@@ -155,31 +105,25 @@ class PolicyPanel(object):
             - constant
             - total_work_content
         """
-        self.due_date_method: str = 'random'
-        self.DD_constant_value: float = 42
+        self.due_date_method: str = 'total_work_content'
+        self.DD_constant_value: float = 35
         self.DD_random_min_max: List[int, int] = [30, 52]
-        self.DD_factor_K_value: int = 12
-        self.DD_total_work_content_value: float = 8
+        self.DD_total_work_content_value: float = 11.667
 
         # generation
         """
         types of generation techniques
-            - constant
-            - exponential
-            - control_loop
-            - MRP
-            - dynamic_coupling
+            - BSS (Base Stock System)
         """
-        self.generation_technique = {}
         self.generated = {}
         self.delivered = {}
-        self.generation_target = {}
+        self.generation_technique = {}
         self.generation_attributes = {}
 
         # assume that all orders have the same generation process
-        for item, attributes in self.sim.model_panel.BOM.items():
-            self.generation_technique[item] = {'technique': attributes["generation"], 'line': attributes["line"]}
-            self.generation_attributes[item] = GENERATION_TECHNIQUE_ATTRIBUTES[attributes['generation']].copy()
+        for type, material in self.sim.model_panel.materials.items():
+            self.generation_technique[type] = material['generation']
+            self.generation_attributes[type] = GENERATION_TECHNIQUE_ATTRIBUTES[material['generation']].copy()
 
         # release
         """
@@ -196,62 +140,40 @@ class PolicyPanel(object):
             - PRD
             - EDD
             - SPT
-            - INVENTORY (requires inventory)
         """
         # release technique
-        self.release_technique = {}
-        self.release_technique_attributes = {}
-        self.release_target = {}
+        self.release_technique = "LUMS_COR"
+        # self.release_technique = "immediate"
+        self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         # tracking variables
-        self.released = {}
-        self.completed = {}
+        self.released = 0
+        self.completed = 0
+        self.release_target = 5.5
         # pool rule
-        self.sequencing_rule = {}
-        self.sequencing_rule_attributes = {}
-        # set for all lines
-        for line, attributes in self.sim.model_panel.LINE_STRUCTURE.items():
-            # release technique
-            self.release_technique[line] = attributes['release_technique']
-            self.release_technique_attributes[line] = RELEASE_TECHNIQUE_ATTRIBUTES[attributes['release_technique']].copy()
-            # tracking variables
-            self.released[line] = 0
-            self.completed[line] = 0
-            self.release_target[line] = 30
-            # pool rule
-            self.sequencing_rule[line] = "PRD"
-            self.sequencing_rule_attributes[line] = POOL_RULE_ATTRIBUTES["PRD"].copy()
-
-        # set line specific release loops
-        self.release_target['line_1'] = 7
-        self.release_target['line_2'] = 20
-
-        self.sequencing_rule['line_1'] = "PRD"
-        self.sequencing_rule['line_2'] = "INVENTORY"
-
+        self.sequencing_rule = "EDD"
+        self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES["EDD"].copy()
 
         # dispatching
         """
         dispatching rules available
             - FCFS
             - SLACK
-            - INVENTORY (requires inventory)
         """
-        self.dispatching_mode = {'line_1': "priority_rule", 'line_2': "priority_rule"}
-        self.dispatching_rule = {'line_1': "FCFS", 'line_2': "FCFS"}
+        self.dispatching_mode = "priority_rule"
+        self.dispatching_rule = "FCFS"
 
         # material allocation
         """
         material allocation
             - availability
-            
         """
-        self.material_allocation = {'line_1': "availability", 'line_2': "availability"}
+        self.material_allocation = "availability"
         return
 
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'control_loop': {'generation_target': 10, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 10, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {
@@ -265,6 +187,11 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
                'periodic': False,
                'continuous': True,
                'trigger': False},
+    'CONWIP_trig': {'tracking_variable': 'total',
+               'measure': 'WIP',
+               'periodic': False,
+               'continuous': True,
+               'trigger': True},
     'CONLOAD': {'tracking_variable': 'total',
                 'measure': 'workload',
                 'periodic': False,
@@ -287,4 +214,5 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
 POOL_RULE_ATTRIBUTES = {
     'FCFS': {},
     'PRD': {'PRD_k': 4},
+    'EDD': {},
 }
