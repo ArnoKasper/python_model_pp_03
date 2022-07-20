@@ -21,10 +21,11 @@ class Process(object):
             self.work_centre_occupied[work_centre] = False
         return
 
-    def put_in_queue(self, order):
+    def put_in_queue(self, order, dispatch=True):
         """
         controls if an order can immediately be send to a capacity source or needs to be put in the queue.
         :param order: order object
+        :param dispatch: determine whether to dispatch or not
         :return:
         """
         if order.first_entry:
@@ -32,6 +33,8 @@ class Process(object):
             order.release_time = self.sim.env.now
             order.pool_time = order.release_time - order.entry_time
             order.first_entry = False
+            if self.dispatching_rule == "ODD_land":
+                self.sim.general_functions.ODD_land_adaption(order=order)
 
         # get work centre
         work_centre = order.routing_sequence[0]
@@ -40,7 +43,7 @@ class Process(object):
         # control if dispatching is needed
         queue_item = self.queue_item(order=order, work_centre=work_centre)
         self.sim.model_panel.QUEUES[work_centre].put(queue_item)
-        if not self.work_centre_occupied[work_centre]:
+        if len(self.sim.model_panel.WORK_CENTRES[work_centre].users) == 0 and dispatch:
             self.dispatch_order(work_centre=work_centre)
             return  # order dispatched, return to avoid duplication
         return
@@ -48,6 +51,7 @@ class Process(object):
     def starvation_dispatch(self):
         for work_centre in self.sim.model_panel.WORK_CENTRES.keys():
             if len(self.sim.model_panel.WORK_CENTRES[work_centre].users) == 0:
+                pass
                 self.dispatch_order(work_centre=work_centre)
         return
 
@@ -68,8 +72,8 @@ class Process(object):
             order.dispatching_priority[work_centre] = self.sim.env.now
         elif self.dispatching_rule == "SLACK":
             order.dispatching_priority[work_centre] = order.due_date - self.sim.env.now - order.remaining_process_time
-        elif self.dispatching_rule == "INVENTORY":
-            order.dispatching_priority[work_centre] = self.sim.inventory.inventory_priority(item=order.item_name)
+        elif self.dispatching_rule == "ODD_land":
+            order.dispatching_priority[work_centre] = order.ODDs[work_centre]
         else:
             raise Exception("no valid priority rule defined")
         return
@@ -163,7 +167,6 @@ class Process(object):
         :param machine: the name of the machine
         :return: void
         """
-        self.sim.data.order_input_counter += 1
         # set params
         order.work_center_RQ = self.sim.model_panel.WORK_CENTRES[work_centre]
         req = order.work_center_RQ.request(priority=order.dispatching_priority[work_centre])
@@ -196,8 +199,6 @@ class Process(object):
             # general data collection
             self.sim.data.order_output_counter += 1
             self.sim.data.accumulated_process_time += order.process_time_cumulative
-
-            order.inventory_departure_time = self.sim.env.now
             self.data_collection_final(order=order)
 
             # stimulate release upstream
@@ -240,12 +241,12 @@ class Process(object):
         df_list.append(order.identifier)
         df_list.append(order.name)
         df_list.append(order.completion_time - order.entry_time)
-        df_list.append(order.release_time - order.entry_time)
-        df_list.append(order.material_available_time - order.entry_time)
+        df_list.append(order.pool_time)
         df_list.append(order.completion_time - order.release_time)
         df_list.append(order.completion_time - order.due_date)
         df_list.append(max(0, (order.completion_time - order.due_date)))
         df_list.append(max(0, self.heavenside(x=(order.completion_time - order.due_date))))
+        df_list.append(order.material_available_time - order.entry_time)
         df_list.append(order.material_replenishment_time)
         df_list.append(order.inventory_time)
 

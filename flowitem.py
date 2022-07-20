@@ -53,6 +53,7 @@ class Order(object):
 
         # process time
         self.process_time = {}
+        self.process_time_release = {}
         self.process_time_cumulative = 0
         self.remaining_process_time = 0
 
@@ -69,6 +70,7 @@ class Order(object):
         self.wc_state = {}  # tracks which machine was used
 
         for WC in self.routing_sequence:
+            # process time
             if self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "2_erlang_truncated":
                 self.process_time[WC] = self.sim.general_functions.two_erlang_truncated(
                     mean=self.sim.model_panel.MEAN_PROCESS_TIME
@@ -83,8 +85,19 @@ class Order(object):
                 )
             else:
                 raise Exception("no valid process time distribution selected")
+
+            # general process time variables
+            if self.sim.policy_panel.release_process_times == "deterministic":
+                self.process_time_release[WC] = self.process_time[WC]
+            elif self.sim.policy_panel.release_process_times == "stochastic":
+                self.process_time_release[WC] = self.sim.model_panel.MEAN_PROCESS_TIME
+            else:
+                raise Exception("unknown if process times for release are known or unknown")
+
             self.process_time_cumulative += self.process_time[WC]
             self.remaining_process_time += self.process_time[WC]
+
+            # order progress data
             self.queue_entry_time[WC] = 0
             self.proc_finished_time[WC] = 0
             self.queue_time[WC] = 0
@@ -106,6 +119,8 @@ class Order(object):
         if self.sim.policy_panel.sequencing_rule in ["PRD"]:
             self.pool_priority = self.due_date - (len(self.routing_sequence) *
                                                   self.sim.policy_panel.sequencing_rule_attributes['PRD_k'])
+        if self.sim.policy_panel.dispatching_rule == "ODD_land":
+            self.ODDs = {}
         return
 
     def update_material_data(self):

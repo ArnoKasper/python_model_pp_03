@@ -26,6 +26,7 @@ class Demand(object):
         while True:
             # create an order object and give it a name
             order = Order(simulation=self.sim, identifier=i)
+            self.sim.data.order_input_counter += 1
             # release control
             self.sim.release.put_in_pool(order=order)
             # next inter arrival time

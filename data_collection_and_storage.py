@@ -13,21 +13,17 @@ class DataCollection(object):
         self.experiment_database = None
         self.order_list = list()
 
-        # demand params
-        self.demanded_items_counter = 0
-        self.demanded_items_fulfilled = 0
-
         # columns names
         self.columns_names_run = [
                             'identifier',
                             'product_name',
                             'throughput_time',
                             'pool_time',
-                            'material_waiting_time',
                             'shop_throughput_time',
                             'lateness',
                             'tardiness',
                             'tardy',
+                            'material_waiting_time',
                             'material_replenishment_time',
                             'inventory_time'
                                 ]
@@ -55,9 +51,6 @@ class DataCollection(object):
         # data processing finished. Update database new run
         self.order_list = list()
         self.accumulated_process_time = 0
-
-        self.demanded_items_counter = 0
-        self.demanded_items_fulfilled = 0
         return
 
     def store_run_data(self):

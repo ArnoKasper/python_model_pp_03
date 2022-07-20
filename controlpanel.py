@@ -18,7 +18,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 10#0  # number of replications
+        self.NUMBER_OF_RUNS: int = 1#00  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 3,
@@ -63,7 +63,7 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated'
+        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated' # 'exponential' #
 
         # orders
         self.order_attributes = {"name": "customized",
@@ -87,7 +87,10 @@ class ModelPanel(object):
                                                   env=self.sim.env,
                                                   id=f"{type}"
                                                   )
-
+        """
+        - immediate, i.e., replenishment time is zero.
+        - supplier, i.e., replenishment time is non-zero
+        """
         self.DELIVERY = "supplier"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         return
@@ -106,9 +109,9 @@ class PolicyPanel(object):
             - total_work_content
         """
         self.due_date_method: str = 'total_work_content'
-        self.DD_constant_value: float = 35
+        self.DD_constant_value: float = 42
         self.DD_random_min_max: List[int, int] = [30, 52]
-        self.DD_total_work_content_value: float = 11.667
+        self.DD_total_work_content_value: float = 10
 
         # generation
         """
@@ -119,6 +122,13 @@ class PolicyPanel(object):
         self.delivered = {}
         self.generation_technique = {}
         self.generation_attributes = {}
+        """
+                    
+        material_reordering: when to send a replenishment order
+            - release
+            - arrival 
+        """
+        self.material_reordering = 'release'
 
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
@@ -134,7 +144,11 @@ class PolicyPanel(object):
             - WLC: pure_periodic_release
             - WLC: pure_continuous release
             - WLC: LUMS_COR
-            
+        
+        for methods that use process time
+            - stochastic 
+            - deterministic 
+        
         types of release sequencing rules
             - FCFS
             - PRD
@@ -145,19 +159,23 @@ class PolicyPanel(object):
         self.release_technique = "LUMS_COR"
         # self.release_technique = "immediate"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
+        self.release_process_times = 'deterministic'
+
         # tracking variables
         self.released = 0
         self.completed = 0
-        self.release_target = 5.5
+        self.release_target = 5.8
+
         # pool rule
-        self.sequencing_rule = "EDD"
-        self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES["EDD"].copy()
+        self.sequencing_rule = "PRD"
+        self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES["PRD"].copy()
 
         # dispatching
         """
         dispatching rules available
             - FCFS
             - SLACK
+            - ODD_land, following Land et al. (2014)
         """
         self.dispatching_mode = "priority_rule"
         self.dispatching_rule = "FCFS"
@@ -173,7 +191,7 @@ class PolicyPanel(object):
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 10, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 15, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {
@@ -206,7 +224,7 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
     'LUMS_COR': {'tracking_variable': 'work_centre',
                  'measure': 'workload',
                  'periodic': True,
-                 'continuous': True,
+                 'continuous': False,
                  'trigger': True,
                  'check_period': 4},
 }

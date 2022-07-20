@@ -88,3 +88,17 @@ class GeneralFunctions(object):
         """
         return self.sim.env.now + (order.process_time_cumulative * self.sim.policy_panel.DD_total_work_content_value)
 
+    def ODD_land_adaption(self, order):
+        """
+        update ODD's following Land et al. (2014)
+        :param order:
+        """
+        slack = order.due_date - self.sim.env.now
+        if slack >= 0:
+            for WC in order.routing_sequence:
+                order.ODDs[WC] = self.sim.env.now + (order.routing_sequence.index(WC) + 1) *\
+                                 (slack / len(order.routing_sequence))
+        else:
+            for WC in order.routing_sequence:
+                order.ODDs[WC] = self.sim.env.now
+        return

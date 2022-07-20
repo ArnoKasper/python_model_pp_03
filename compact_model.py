@@ -41,16 +41,16 @@ class ControlPanel(object):
             self.manufacturing_process[work_centre] = simpy.PriorityResource(self.sim.env, capacity=1)
 
         # customer enquiry management - Due Date determination
-        self.min_max_random_dd = [30, 45]  # Due Dates intervals
+        self.min_max_random_dd = [42, 42]  # Due Dates intervals
 
         # release control (immediate release is LUMS COR = False)
         self.LUMS_COR = True
-        self.workload_norm = 5
+        self.workload_norm = 5.8
         self.periodic_release_period = 4.0
 
         # pool rules
         self.pool_rule = "PRD"
-        self.periodic_release_date_factor_k = 3
+        self.periodic_release_date_factor_k = 4
 
         # workload params
         self.processed_workload = dict()
@@ -62,10 +62,10 @@ class ControlPanel(object):
             self.released_workload[work_centre] = 0
 
         # order arrival params
-        self.mean_time_between_arrival = 0.648
+        self.mean_time_between_arrival = 0.64815
         self.mean_process_time = 1
         self.truncation_level = 4
-        self.general_flow_shop = True  # False is pure job shop
+        self.general_flow_shop = False  # False is pure job shop
 
         # dispatching
         """
@@ -74,7 +74,7 @@ class ControlPanel(object):
             - SPT: Shortest Process time 
             - ODD: Operational Due Date (following Land et al., 2014) 
         """
-        self.dispatching_rule = "ODD"
+        self.dispatching_rule = "FCFS"
 
 
 class DataControl(object):
@@ -99,6 +99,7 @@ class DataControl(object):
 
         # other
         self.accumulated_process_time = 0
+        self.continous_trigger = 0
 
     def append_run_list(self, result_list):
         """
@@ -121,6 +122,7 @@ class DataControl(object):
         # data processing finished. Update database new run
         self.order_list = list()
         self.accumulated_process_time = 0
+        self.sim.data.continous_trigger = 0
         return
 
     def store_run_data(self):
@@ -153,6 +155,8 @@ class DataControl(object):
         df["std_tardiness"] = df_run.loc[:, "tardiness"].std()
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
+
+        df["LC_triggers"] = self.sim.data.continous_trigger
 
         # save data from the run to experiment dataframe
         if self.experiment_database is None:
@@ -227,9 +231,12 @@ class GeneralFunctions(object):
         random due date assignment
         :return: value
         """
+        """
         return self.sim.env.now + self.random_generator.uniform(self.sim.control_panel.min_max_random_dd[0],
                                                                 self.sim.control_panel.min_max_random_dd[1]
                                                                 )
+        """
+        return self.sim.env.now + self.sim.control_panel.min_max_random_dd[0]
 
 
 class Order(object):
@@ -337,7 +344,7 @@ class Process(object):
             order.requested_work_centre = self.sim.control_panel.manufacturing_process[work_centre]
             # request with a certain level of priority
             if self.sim.control_panel.dispatching_rule == "FCFS":
-                order.priority = order.identifier
+                order.priority = self.sim.env.now
             elif self.sim.control_panel.dispatching_rule == "SPT":
                 order.priority = order.process_time[work_centre]
             elif self.sim.control_panel.dispatching_rule == "ODD":
@@ -522,6 +529,7 @@ class ReleaseControl(object):
                         order.release = True
                         # if an order turned out to be released, it is send to be removed from the pool
                     if order.release:
+                        self.sim.data.continous_trigger += 1
                         # send the order to the starting work centre
                         self.sim.env.process(self.sim.process.manufacturing_process(order=order))
                         # release order from the pool

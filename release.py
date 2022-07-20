@@ -61,21 +61,26 @@ class Release(object):
         self.activate_release(order=order)
         return
 
-    def activate_release(self, work_centre=None, order=None):
+    def activate_release(self, work_centre=None, order=None, material_arrival=False):
         # control for release
         if self.activate_continuous_release:
             self.continuous_release()
         # activate continuous trigger mechanisms
         if self.activate_continuous_trigger:
             if order is not None:
+                # new order arrival
                 work_centre = order.routing_sequence[0]
-                self.continuous_trigger_activation(work_centre=work_centre)
-            elif work_centre is not None:
-                self.sim.release.continuous_trigger_activation(work_centre=work_centre)
-            else:
-                starving_work_centres = self.collect_starving_work_centres_work_centres()
-                for starving_work_centres in self.sim.model_panel.WORK_CENTRES:
+                if self.control_queue_empty(work_centre=work_centre):
                     self.continuous_trigger(work_centre=work_centre)
+            elif work_centre is not None:
+                # operation completed at work centre
+                if self.control_queue_empty(work_centre=work_centre):
+                    self.continuous_trigger(work_centre=work_centre)
+            elif material_arrival and self.sim.model_panel.DELIVERY != "immediate":
+                # new material arrival
+                for potential_starving_work_centre in self.sim.model_panel.WORK_CENTRES:
+                    if self.control_queue_empty(work_centre=potential_starving_work_centre):
+                        self.continuous_trigger(work_centre=potential_starving_work_centre)
         return
 
     def set_pool_priority(self, order):
@@ -158,9 +163,9 @@ class Release(object):
         if self.measure == "WIP":
             return 1
         elif self.measure == "workload" and work_centre is None:
-            return sum(order.process_time.values())
+            return sum(order.process_time_release.values())
         elif self.measure == "workload" and work_centre is not None:
-            return order.process_time[work_centre] / (order.routing_sequence_data.index(work_centre) + 1)
+            return order.process_time_release[work_centre] / (order.routing_sequence_data.index(work_centre) + 1)
         else:
             raise Exception('failed review the correct tracking measure for release')
 
@@ -258,6 +263,9 @@ class Release(object):
                     raise Exception(f'{review_condition} is an invalid review condition')
                 # release if allowed
                 if order.release:
+                    next_release = True
+                    if review_condition == 'starvation':
+                        next_release = False
                     # contribute load but do not track for immediate release
                     self.contribute_release(order=order)
                     # remove order from pool
@@ -265,11 +273,11 @@ class Release(object):
                     # allocate materials to orders
                     self.dedicate_materials_to_orders(order=order)
                     # the orders are send to the process, but dispatch after release period
-                    self.sim.process.put_in_queue(order=order)
+                    dispatch = True
+                    if self.activate_periodic_release and review_condition != 'starvation':
+                        dispatch = False
+                    self.sim.process.put_in_queue(order=order, dispatch=dispatch)
                     # indicate if an additional release is possible
-                    next_release = True
-                    if review_condition == 'starvation':
-                        next_release = False
                     return break_loop, next_release
             # no nex release possible as all orders in the pool cannot be released
             return break_loop, next_release
@@ -330,16 +338,10 @@ class Release(object):
         """
         in_system = len(self.sim.model_panel.QUEUES[work_centre].items) + \
                     len(self.sim.model_panel.WORK_CENTRES[work_centre].users)
-        return in_system <= 0
-
-    def continuous_trigger_activation(self, work_centre):
-        """
-        feedback mechanism for continuous release
-        :param work_centre:
-        """
-        # control the if the the amount of orders in or before the work centre is equal or less than one
-        if self.control_queue_empty(work_centre=work_centre):
-            self.continuous_trigger(work_centre=work_centre)
+        if in_system == 0:
+            return True
+        else:
+            return False
 
     def collect_starving_work_centres_work_centres(self):
         starving_work_centres = []
@@ -365,3 +367,17 @@ class Release(object):
         # activate release mechanism
         self.activate_release(work_centre=work_centre)
 
+    def material_needs(self):
+        # specify material needs for each item
+        material_needs = {}
+        for item_type, material in self.sim.model_panel.materials.items():
+            material_needs[item_type] = 0
+        # no material needs
+        if len(self.sim.model_panel.POOLS.items) == 0:
+            return material_needs
+        # determine the material needs
+        pool_list = self.sim.model_panel.POOLS.items
+        for pool_item in pool_list:
+            order = pool_item[self.index_order_object]
+            material_needs[order.requirements[0]] += 1
+        return material_needs

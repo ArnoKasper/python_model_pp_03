@@ -40,11 +40,24 @@ class Generation(object):
         if self.sim.generation_process[item_type] == 'BSS':
             inventory_level = len(self.sim.model_panel.SKU[item_type].items)
             in_process = self.generation_attributes[item_type]['generated'] - self.generation_attributes[item_type]['delivered']
+
+            # determine how material reorder policy
+            if self.sim.policy_panel.material_reordering == "arrival":
+                material_needs = self.sim.release.material_needs()
+                arrival_correction = material_needs[item_type]
+            elif self.sim.policy_panel.material_reordering == "release":
+                arrival_correction = 0
+            else:
+                raise Exception(f"material reorder policy unknown")
+
             # control if loop allows new generation
-            if (inventory_level + in_process) < self.generation_attributes[item_type]['reorder_point']:
-                if not warmup or self.sim.model_panel.DELIVERY == "supplier":
-                    self.generate_and_replenish(item_type=item_type)
-                elif warmup or self.sim.model_panel.DELIVERY == "immediate":
+            if (inventory_level + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point']:
+                if self.sim.model_panel.DELIVERY == "supplier":
+                    if not warmup:
+                        self.generate_and_replenish(item_type=item_type)
+                    elif warmup:
+                        self.generate_and_put_in_inventory(item_type=item_type)
+                elif self.sim.model_panel.DELIVERY == "immediate":
                     self.generate_and_put_in_inventory(item_type=item_type)
                 else:
                     raise Exception(f"supplier process unknown")

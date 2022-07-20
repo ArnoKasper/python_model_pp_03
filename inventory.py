@@ -106,6 +106,6 @@ class Inventory(object):
             return True
 
     def inventory_update_release(self):
-        self.sim.release.activate_release()
+        self.sim.release.activate_release(material_arrival=True)
         return
 
