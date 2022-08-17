@@ -17,6 +17,7 @@ from process import Process
 from release import Release
 from inventory import Inventory
 from supply import Supply
+from systemstatedispatching import SystemStateDispatching
 
 
 class SimulationModel(object):
@@ -54,6 +55,7 @@ class SimulationModel(object):
         # import PPC
         self.release: Release = Release(simulation=self)
         self.inventory: Inventory = Inventory(simulation=self)
+        self.system_state_dispatching: SystemStateDispatching = SystemStateDispatching(simulation=self)
 
         # import process
         self.supplier: Supply = Supply(simulation=self)

@@ -135,6 +135,23 @@ class Process(object):
         :param machine: the name of the machine
         :return: order, boolean: break_loop, boolean: free_load
         """
+
+        """
+        
+        NOT IMPLEMENTED YET!
+        
+        # update queue list depending on dispatching mode
+        if self.sim.policy_panel.dispatching_mode == 'system_state_dispatching':
+            pool_list = []
+            if self.sim.policy_panel.system_state_dispatching_version == "DRACO":
+                pool_list = self.sim.model_panel.ORDER_POOLS[work_centre].items.copy()
+            # get queueing orders
+            queue_list = self.sim.model_panel.ORDER_QUEUES[work_centre].items.copy()
+            dispatching_options = self.sim.system_state_dispatching.dispatching_mode(queue_list=queue_list,
+                                                                                     pool_list=pool_list,
+                                                                                     work_centre=work_centre)
+        """
+
         # setup params
         dispatching_list = list()
 

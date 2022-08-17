@@ -1,13 +1,7 @@
-
-IMM with reorder policy upon release
+Mean time between arrival: 0.64815
  run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    90.662105 19.123591  0.059642   19.06395       0.059642        15.17077       10.521887      -10.99004        2.059332               34.651343          0.224646 ['19.1236', 'nan', 'nan', 'nan']
-
-LC with reorder policy upon release
+   1    89.963349 35.525142   0.97648  34.548662        0.97648       10.081235        2.678849       0.510865        9.596702              331.330778           0.50227 ['35.5251', 'nan', 'nan', 'nan']
+Simulation ends
  run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    90.681364 16.313407  4.006276  12.307131       4.006276       14.872362       10.621378     -13.803286        0.767169               11.326529          0.107052 ['16.3134', 'nan', 'nan', 'nan']
-
-LC with reorder policy upon arrival
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    90.681364 16.339112  4.004973  12.334139       4.004973       15.077406       11.943467     -13.777582        0.786232               12.180233          0.106277 ['16.3391', 'nan', 'nan', 'nan']
-
+   1    90.141171 36.292151  0.059594  36.232557       0.059594       10.015941        4.700621       1.195004        9.952379              329.143201          0.514017 ['36.2922', 'nan', 'nan', 'nan']
+Simulation ends

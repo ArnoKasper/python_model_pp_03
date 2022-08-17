@@ -13,12 +13,19 @@ class Order(object):
         self.name = f"order_{'%07d' % self.identifier}"
         self.materials = []
 
+        # copy the material list
+        requirements = self.sim.model_panel.material_types.copy()
+        # settings check
+        if len(requirements) < self.sim.model_panel.material_quantity:
+            raise Exception("higher quantity requested than possible")
         # determine material requirement
-        if self.attributes["material_req"] == 'single_uniform':
-            requirements = self.sim.model_panel.material_types.copy()
-            self.requirements = self.sim.random_generator.sample(requirements, 1)
+        if self.sim.model_panel.material_request == "constant":
+            self.requirements = self.sim.random_generator.sample(requirements, self.sim.model_panel.material_quantity)
+        elif self.sim.model_panel.material_request == "variable":
+            nr_materials = self.sim.random_generator.randint(1, self.sim.model_panel.material_quantity)
+            self.requirements = self.sim.random_generator.sample(requirements, nr_materials)
         else:
-            raise Exception("no valid material requirements technique selected")
+            raise Exception("no valid material request procedure")
 
         # data params
         self.entry_time = self.sim.env.now

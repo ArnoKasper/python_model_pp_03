@@ -18,11 +18,11 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 1#00  # number of replications
+        self.NUMBER_OF_RUNS: int = 1  # 00  # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": 3,
-                                'routing_configuration': 'PFS'}
+        self.SHOP_ATTRIBUTES = {"work_centres": 6,
+                                'routing_configuration': 'PJS'}
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
         # make pool
@@ -63,12 +63,22 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated' # 'exponential' #
+        self.PROCESS_TIME_DISTRIBUTION = 'exponential' # '2_erlang_truncated'  #
 
         # orders
+        """
+        - material quantity needed
+            - 1, 2, 3
+        - material request
+            - constant: each order request the same number of items
+            - variable: each order request a variable number of items
+        """
+        self.material_requirements_distribution = 'uniform'
+        self.material_quantity = 2
+        self.material_request = 'constant'
+
         self.order_attributes = {"name": "customized",
                                  "order_type": 'customized',
-                                 "material_req": "single_uniform",
                                  'enter_inventory': False,
                                  "generation": 'demand',
                                  'expected_mean': self.MEAN_PROCESS_TIME}
@@ -77,7 +87,7 @@ class ModelPanel(object):
         self.SKU: Dict[...] = {}
         self.material_types = ['A', 'B']
         self.materials = {}
-        self.expected_replenishment_time = 15
+        self.expected_replenishment_time = 10
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
@@ -130,6 +140,14 @@ class PolicyPanel(object):
         """
         self.material_reordering = 'release'
 
+        """
+        material_dedication: when to dedicate materials to orders
+            - release
+            - arrival
+        """
+        # not implemented
+        self.material_dedication = 'release'
+
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
             self.generation_technique[type] = material['generation']
@@ -139,6 +157,7 @@ class PolicyPanel(object):
         """
         types of release techniques
             - immediate
+            - DRACO
             - CONWIP
             - CONLOAD
             - WLC: pure_periodic_release
@@ -156,8 +175,8 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        self.release_technique = "LUMS_COR"
-        # self.release_technique = "immediate"
+        # self.release_technique = "DRACO"
+        self.release_technique = "immediate"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 
@@ -191,42 +210,55 @@ class PolicyPanel(object):
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 15, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 20, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {
+
     'immediate': {'tracking_variable': 'none',
                   'measure': 'none',
                   'periodic': False,
                   'continuous': True,
-                  'trigger': False},
+                  'trigger': False,
+                  'non_hierarchical': False},
+    'DRACO': {'tracking_variable': 'total',
+              'measure': 'WIP',
+              'periodic': False,
+              'continuous': False,
+              'trigger': False,
+              'non_hierarchical': True},
     'CONWIP': {'tracking_variable': 'total',
                'measure': 'WIP',
                'periodic': False,
                'continuous': True,
-               'trigger': False},
+               'trigger': False,
+               'non_hierarchical': False},
     'CONWIP_trig': {'tracking_variable': 'total',
-               'measure': 'WIP',
-               'periodic': False,
-               'continuous': True,
-               'trigger': True},
+                    'measure': 'WIP',
+                    'periodic': False,
+                    'continuous': True,
+                    'trigger': True,
+                    'non_hierarchical': False},
     'CONLOAD': {'tracking_variable': 'total',
                 'measure': 'workload',
                 'periodic': False,
                 'continuous': True,
-                'trigger': False},
+                'trigger': False,
+                'non_hierarchical': False},
     'pure_periodic_release': {'tracking_variable': 'work_centre',
                               'measure': 'workload',
                               'periodic': True,
                               'continuous': False,
                               'trigger': False,
-                              'check_period': 4},
+                              'check_period': 4,
+                              'non_hierarchical': False},
     'LUMS_COR': {'tracking_variable': 'work_centre',
                  'measure': 'workload',
                  'periodic': True,
                  'continuous': False,
                  'trigger': True,
-                 'check_period': 4},
+                 'check_period': 4,
+                 'non_hierarchical': False}
 }
 
 POOL_RULE_ATTRIBUTES = {

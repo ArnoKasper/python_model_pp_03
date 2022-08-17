@@ -51,7 +51,7 @@ class Generation(object):
                 raise Exception(f"material reorder policy unknown")
 
             # control if loop allows new generation
-            if (inventory_level + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point']:
+            if (inventory_level + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point'] + 1:
                 if self.sim.model_panel.DELIVERY == "supplier":
                     if not warmup:
                         self.generate_and_replenish(item_type=item_type)
@@ -75,7 +75,7 @@ class Generation(object):
 
     def generate_and_replenish(self, item_type):
         # start supplier process
-        self.sim.env.process(self.sim.supplier.delivery(item_type=item_type))
+        self.sim.supplier.delivery(item_type=item_type)
         return
 
     def generate_and_put_in_inventory(self, item_type):
