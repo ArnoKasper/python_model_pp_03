@@ -33,6 +33,7 @@ class Process(object):
             order.release_time = self.sim.env.now
             order.pool_time = order.release_time - order.entry_time
             order.first_entry = False
+            order.location = "system"
             if self.dispatching_rule == "ODD_land":
                 self.sim.general_functions.ODD_land_adaption(order=order)
 
@@ -41,11 +42,16 @@ class Process(object):
         order.queue_entry_time[work_centre] = self.sim.env.now
 
         # control if dispatching is needed
-        queue_item = self.queue_item(order=order, work_centre=work_centre)
-        self.sim.model_panel.QUEUES[work_centre].put(queue_item)
-        if len(self.sim.model_panel.WORK_CENTRES[work_centre].users) == 0 and dispatch:
-            self.dispatch_order(work_centre=work_centre)
-            return  # order dispatched, return to avoid duplication
+        if order.dispatch_non_hierarchical:
+            self.work_centre_occupied[work_centre] = True
+            order.process = self.sim.env.process(
+                self.sim.process.capacity_process(order=order, work_centre=order.routing_sequence[0]))
+        else:
+            queue_item = self.queue_item(order=order, work_centre=work_centre)
+            self.sim.model_panel.QUEUES[work_centre].put(queue_item)
+            if len(self.sim.model_panel.WORK_CENTRES[work_centre].users) == 0 and dispatch:
+                self.dispatch_order(work_centre=work_centre)
+                return  # order dispatched, return to avoid duplication
         return
 
     def starvation_dispatch(self):
@@ -64,6 +70,23 @@ class Process(object):
         # sort the queue
         self.sim.model_panel.QUEUES[work_center].items.sort(key=itemgetter(self.index_sorting_removal))
         self.sim.model_panel.QUEUES[work_center].get()
+        return
+
+    def pull_from_queue_pool(self, work_center, location):
+        """
+        removes an order from the queue
+        :param work_center: work_center number indicating the number of the capacity source
+        :return: void
+        """
+        if location == "pool":
+            # sort the pool
+            self.sim.release.release(review_condition='immediate', put_in_queue=False)
+        elif location == "system":
+            # sort the queue
+            self.sim.model_panel.QUEUES[work_center].items.sort(key=itemgetter(self.index_sorting_removal))
+            self.sim.model_panel.QUEUES[work_center].get()
+        else:
+            raise Exception(f"{location} is an unknown location")
         return
 
     def update_priority(self, order, work_centre):
@@ -96,7 +119,7 @@ class Process(object):
         # get queue list and return
         return self.get_queue_item(order=order, work_centre=work_centre)
 
-    @ staticmethod
+    @staticmethod
     def get_queue_item(order, work_centre):
         queue_item = [1,  # removal integer
                       order,  # order object
@@ -120,8 +143,10 @@ class Process(object):
 
         # get the order object
         order = order_list[self.index_order_object]
-
-        self.release_from_queue(work_center=order.routing_sequence[0])
+        if self.sim.policy_panel.release_technique == "DRACO":
+            self.pull_from_queue_pool(work_center=order.routing_sequence[0], location=order.location)
+        else:
+            self.release_from_queue(work_center=order.routing_sequence[0])
         # set params and start process
         self.work_centre_occupied[work_centre] = True
         order.process = self.sim.env.process(
@@ -136,44 +161,51 @@ class Process(object):
         :return: order, boolean: break_loop, boolean: free_load
         """
 
-        """
-        
-        NOT IMPLEMENTED YET!
-        
         # update queue list depending on dispatching mode
-        if self.sim.policy_panel.dispatching_mode == 'system_state_dispatching':
-            pool_list = []
-            if self.sim.policy_panel.system_state_dispatching_version == "DRACO":
-                pool_list = self.sim.model_panel.ORDER_POOLS[work_centre].items.copy()
-            # get queueing orders
-            queue_list = self.sim.model_panel.ORDER_QUEUES[work_centre].items.copy()
-            dispatching_options = self.sim.system_state_dispatching.dispatching_mode(queue_list=queue_list,
-                                                                                     pool_list=pool_list,
+        if self.sim.policy_panel.release_technique == "DRACO":
+            # if there are no items in the queue or pool, return
+            if len(self.sim.model_panel.QUEUES[work_centre].items) == 0 \
+                    and len(self.sim.model_panel.POOLS.items) == 0:
+                return None, True
+
+            # get orders in the pool for which orders are available
+            pool_list = self.sim.release.get_release_list()
+            # select the orders with the first operation at work_centre
+            if pool_list[0] != None:
+                pool_list_work_centre = self.sim.system_state_dispatching.get_release_list(pool_list=pool_list,
+                                                                                           work_centre=work_centre
+                                                                                           )
+            else:
+                pool_list_work_centre = []
+                # get queueing orders
+            queue_list = self.sim.model_panel.QUEUES[work_centre].items.copy()
+            dispatching_list = self.sim.system_state_dispatching.dispatching_mode(queue_list=queue_list,
+                                                                                     pool_list=pool_list_work_centre,
                                                                                      work_centre=work_centre)
-        """
-
-        # setup params
-        dispatching_list = list()
-
-        # if there are no items in the queue, return
-        if len(self.sim.model_panel.QUEUES[work_centre].items) == 0:
-            return None, True
-
-        # get the list of queueing items
-        queue_list = self.sim.model_panel.QUEUES[work_centre].items
-        # find order with highest impact or priority
-        for i, order_list in enumerate(queue_list):
-            # update priority
-            order = order_list[self.index_order_object]
-            self.update_priority(order=order, work_centre=work_centre)
-            # add to queue
-            dispatching_list.append(order_list)
+        else:
+            # if there are no items in the queue, return
+            if len(self.sim.model_panel.QUEUES[work_centre].items) == 0:
+                return None, True
+            # get the list of queueing items
+            dispatching_options = self.sim.model_panel.QUEUES[work_centre].items
+            # setup params
+            dispatching_list = list()
+            # find order with highest impact or priority
+            for i, order_list in enumerate(dispatching_options):
+                # update priority
+                order = order_list[self.index_order_object]
+                self.update_priority(order=order, work_centre=work_centre)
+                # add to queue
+                dispatching_list.append(order_list)
 
         # select order with highest impact or priority, find the correct priority
-        order_item = sorted(dispatching_list, key=itemgetter(self.index_priority))[0]  # sort and pick with highest priority
+        order_item = sorted(dispatching_list, key=itemgetter(self.index_priority))[
+            0]  # sort and pick with highest priority
 
         # set to zero to pull out of pull
         order_item[self.index_sorting_removal] = 0
+        if self.sim.policy_panel.release_technique == "DRACO":
+            order_item[self.index_order_object].dispatch_non_hierarchical = True
         return order_item, False
 
     def capacity_process(self, order, work_centre):
@@ -184,6 +216,14 @@ class Process(object):
         :param machine: the name of the machine
         :return: void
         """
+        # update info
+        if order.first_entry:
+            # first time entering the floor
+            order.release_time = self.sim.env.now
+            order.pool_time = order.release_time - order.entry_time
+            order.first_entry = False
+            order.location = "system"
+
         # set params
         order.work_center_RQ = self.sim.model_panel.WORK_CENTRES[work_centre]
         req = order.work_center_RQ.request(priority=order.dispatching_priority[work_centre])

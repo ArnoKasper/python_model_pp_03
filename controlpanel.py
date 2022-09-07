@@ -63,7 +63,7 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = 'exponential' # '2_erlang_truncated'  #
+        self.PROCESS_TIME_DISTRIBUTION = '2_erlang' # 'exponential' # '2_erlang_truncated'  #
 
         # orders
         """
@@ -118,7 +118,7 @@ class PolicyPanel(object):
             - constant
             - total_work_content
         """
-        self.due_date_method: str = 'total_work_content'
+        self.due_date_method: str = 'constant'
         self.DD_constant_value: float = 42
         self.DD_random_min_max: List[int, int] = [30, 52]
         self.DD_total_work_content_value: float = 10
@@ -175,8 +175,8 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        # self.release_technique = "DRACO"
-        self.release_technique = "immediate"
+        self.release_technique = "DRACO"
+        # self.release_technique = "immediate"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 
@@ -225,7 +225,7 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
               'measure': 'WIP',
               'periodic': False,
               'continuous': False,
-              'trigger': False,
+              'trigger': True,
               'non_hierarchical': True},
     'CONWIP': {'tracking_variable': 'total',
                'measure': 'WIP',

@@ -9,6 +9,7 @@ class Order(object):
         """
         self.sim = simulation
         self.identifier = identifier
+        self.location = "pool"
         self.attributes = self.sim.model_panel.order_attributes
         self.name = f"order_{'%07d' % self.identifier}"
         self.materials = []
@@ -41,6 +42,7 @@ class Order(object):
         self.material_available = False
         self.first_entry = True
         self.in_inventory = False
+        self.dispatch_non_hierarchical = False
 
         # routing sequence params
         if self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] in ["GFS", "PJS"]:
@@ -80,6 +82,10 @@ class Order(object):
             # process time
             if self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "2_erlang_truncated":
                 self.process_time[WC] = self.sim.general_functions.two_erlang_truncated(
+                    mean=self.sim.model_panel.MEAN_PROCESS_TIME
+                )
+            elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "2_erlang":
+                self.process_time[WC] = self.sim.general_functions.two_erlang(
                     mean=self.sim.model_panel.MEAN_PROCESS_TIME
                 )
             elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "exponential":

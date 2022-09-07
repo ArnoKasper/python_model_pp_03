@@ -38,6 +38,17 @@ class GeneralFunctions(object):
         inter_arrival_time = round(inter_arrival_time, 5)
         return inter_arrival_time
 
+    def two_erlang(self, mean):
+        """
+        two erlang distribution
+        :return: void
+        """
+        mean_process_time = mean * 2
+        # pull truncated value
+        return self.random_generator.expovariate(mean_process_time) + \
+                          self.random_generator.expovariate(mean_process_time)
+
+
     def two_erlang_truncated(self, mean):
         """
         two erlang distribution

@@ -13,12 +13,16 @@ class Release(object):
         self.index_priority = 2
         
         self.release_technique = self.sim.policy_panel.release_technique
-        
+
+        # release triggered
         self.periodic_processes = False
         self.activate_continuous_trigger = False
         self.activate_continuous_release = False
         self.activate_periodic_release = False
-        self.measure = False
+        self.activate_non_hierarchical = False
+
+        # release measurement information
+        self.measure = None
         self.tracking_variable = None
 
         # initialize release
@@ -47,6 +51,7 @@ class Release(object):
         # activate or deactivate continuous trigger
         self.activate_continuous_trigger = self.sim.policy_panel.release_technique_attributes['trigger']
         self.activate_continuous_release = self.sim.policy_panel.release_technique_attributes['continuous']
+        self.activate_non_hierarchical = self.sim.policy_panel.release_technique_attributes['non_hierarchical']
         # set measurement for release
         self.measure = self.sim.policy_panel.release_technique_attributes['measure']
         return
@@ -62,7 +67,7 @@ class Release(object):
         return
 
     def activate_release(self, work_centre=None, order=None, material_arrival=False):
-        # control for release
+        # control for continuous release
         if self.activate_continuous_release:
             self.continuous_release()
         # activate continuous trigger mechanisms
@@ -240,7 +245,7 @@ class Release(object):
             raise Exception('failed review the correct tracking variable for release')
         return
 
-    def release(self, review_condition="target", attr=None):
+    def release(self, review_condition="target", attr=None, put_in_queue=True):
         # sequence the orders currently in the pool
         self.sim.model_panel.POOLS.items.sort(key=itemgetter(self.index_priority))
         # get valid pool items
@@ -276,7 +281,9 @@ class Release(object):
                     dispatch = True
                     if self.activate_periodic_release and review_condition != 'starvation':
                         dispatch = False
-                    self.sim.process.put_in_queue(order=order, dispatch=dispatch)
+                    # put the order in the queue
+                    if put_in_queue:
+                        self.sim.process.put_in_queue(order=order, dispatch=dispatch)
                     # indicate if an additional release is possible
                     return break_loop, next_release
             # no nex release possible as all orders in the pool cannot be released

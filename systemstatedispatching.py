@@ -8,6 +8,9 @@ class SystemStateDispatching(object):
         # function params
         self.sim = simulation
         self.work_centre_layout = self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT
+        self.index_sorting_removal = 0
+        self.index_order_object = 1
+        self.index_priority = 2
 
         """ system-state variables """
         # inventory
@@ -61,30 +64,30 @@ class SystemStateDispatching(object):
         for i, order_item in enumerate(dispatching_options):
             projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
             # attach impact to the order
-            order_item[1] = sum(projected_impact_list)
+            order_item[self.index_priority] = sum(projected_impact_list)
             # find highest impact for this selection moment
             if sum(projected_impact_list) > sum(self.max_impact_list):
                 self.max_impact_list = projected_impact_list
             # - 1 because simulation model minimizes
-            order_item[1] = order_item[1] * -1
+            order_item[self.index_priority] = order_item[self.index_priority] * -1
         return dispatching_options
 
     def _get_weighted_impact(self, order_item, work_centre):
         # params
-        process_time = order_item[0].process_time[work_centre]
-        process_times = order_item[0].process_time.copy()
-        routing_list = order_item[0].routing_sequence.copy()
+        process_time = order_item[self.index_order_object].process_time[work_centre]
+        process_times = order_item[self.index_order_object].process_time.copy()
+        routing_list = order_item[self.index_order_object].routing_sequence.copy()
         slack = self.slack(
-            d_i=order_item[0].due_date,
+            d_i=order_item[self.index_order_object].due_date,
             t=self.sim.env.now,
             k=1,
-            sum_p_ij=order_item[0].remaining_process_time
+            sum_p_ij=order_item[self.index_order_object].remaining_process_time
         )
         slack_opn = self.slack(
-            d_i=order_item[0].due_date,
+            d_i=order_item[self.index_order_object].due_date,
             t=self.sim.env.now,
             k=len(routing_list),
-            sum_p_ij=order_item[0].remaining_process_time
+            sum_p_ij=order_item[self.index_order_object].remaining_process_time
         )
 
         # get projected impact values
@@ -97,8 +100,6 @@ class SystemStateDispatching(object):
         if self.activate_inventory:
             sigma = 0
 
-
-
         inventory_impact = sum([j * 1 / len(inventory_impact) for j in inventory_impact])
         """
         release element
@@ -108,14 +109,14 @@ class SystemStateDispatching(object):
         if self.activate_release_WIP_target:
             rho = 0
             # release (order in pool)
-            if order_item[0].first_entry:
+            if order_item[self.index_order_object].first_entry:
                 # more orders in the system than cap
                 if self.WIP < (2*self.WIP_target):
                     rho = 1 - (self.WIP / (2*self.WIP_target))
                 else:
                     rho = 0
             # release (order in queue)
-            if not order_item[0].first_entry:
+            if not order_item[self.index_order_object].first_entry:
                 # more load in the system than target
                 if self.WIP < (2*self.WIP_target):
                     rho = (self.WIP / (2*self.WIP_target))
@@ -135,7 +136,7 @@ class SystemStateDispatching(object):
         # obtain xi
         if self.functions_activated["xi"] > 0:
             return_value = self.xi_idleness_impact(
-                order=order_item[0],
+                order=order_item[self.index_order_object],
                 process_time=process_time,
                 upstream_starvation_dict=self.A_dict
             )
@@ -175,33 +176,27 @@ class SystemStateDispatching(object):
         self.V_list = list()
 
         """ update all state variables """
+        for i, pool_order in enumerate(self.sim.model_panel.POOLS.items):
+            processing_order = pool_order[0]
+            # pick remaining process time
+            process_times = []
+            for k, operation in enumerate(processing_order.routing_sequence):
+                process_times.append(processing_order.process_time[operation])
+            # order params
+            slack, slack_opn = self.get_dispatching_variables(order=processing_order)
+            self.append_system_state_variables(
+                process_times=process_times,
+                slack=slack,
+                slack_opn=slack_opn
+            )
+
         # get state information from orders currently in process
         self.WIP = 0
         for j, WC in enumerate(self.work_centre_layout):
-            """ 
-            release
-            """
-            for i, pool_order in enumerate(self.sim.model_panel.ORDER_POOLS[WC].items):
-                processing_order = pool_order[0]
-                # pick remaining process time
-                process_times = []
-                for k, operation in enumerate(processing_order.routing_sequence):
-                    process_times.append(processing_order.process_time[operation])
-                # order params
-                slack, slack_opn = self.get_dispatching_variables(order=processing_order)
-                self.append_system_state_variables(
-                    process_times=process_times,
-                    slack=slack,
-                    slack_opn=slack_opn
-                )
-
-            """ 
-            dispatching 
-            """
             # processing order
-            if len(self.sim.model_panel.MANUFACTURING_FLOOR[WC].users) == 1:
+            if len(self.sim.model_panel.WORK_CENTRES[WC].users) == 1:
                 self.WIP += 1
-                processing_order = self.sim.model_panel.MANUFACTURING_FLOOR[WC].users[0].self
+                processing_order = self.sim.model_panel.WORK_CENTRES[WC].users[0].self
                 # pick remaining process time
                 process_times = []
                 for k, operation in enumerate(processing_order.routing_sequence):
@@ -216,9 +211,9 @@ class SystemStateDispatching(object):
                 )
 
             # get state information from orders currently in queues
-            for i, queueing_order in enumerate(self.sim.model_panel.ORDER_QUEUES[WC].items):
+            for i, queueing_order in enumerate(self.sim.model_panel.QUEUES[work_centre].items):
                 self.WIP += 1
-                processing_order = queueing_order[0]
+                processing_order = queueing_order[self.index_order_object]
                 # pick remaining process time
                 process_times = []
                 for k, operation in enumerate(processing_order.routing_sequence):
@@ -231,21 +226,6 @@ class SystemStateDispatching(object):
                     slack=slack,
                     slack_opn=slack_opn
                 )
-
-        # if we use an hierarchical release method to control FOCUS
-        for i, order in enumerate(self.sim.model_panel.ORDER_POOL.items):
-            processing_order = order[0]
-            process_times = []
-            for k, operation in enumerate(processing_order.routing_sequence):
-                process_times.append(processing_order.process_time[operation])
-                # update upstream load
-            # order params
-            slack, slack_opn = self.get_dispatching_variables(order=processing_order)
-            self.append_system_state_variables(
-                process_times=process_times,
-                slack=slack,
-                slack_opn=slack_opn
-            )
 
         """ 
         update system state params 
@@ -273,8 +253,8 @@ class SystemStateDispatching(object):
         if self.functions_activated["xi"] > 0:
             for j, WC in enumerate(self.work_centre_layout):
                 if WC != work_centre:
-                    if len(self.sim.model_panel.ORDER_QUEUES[WC].items) == 0 \
-                            and len(self.sim.model_panel.ORDER_POOLS[WC].items) == 0:
+                    if len(self.sim.model_panel.QUEUES[WC].items) == 0 \
+                            and len(self.sim.model_panel.POOLS.items) == 0:
                         self.A_dict[WC] = 1
                     else:
                         self.A_dict[WC] = 0
@@ -325,6 +305,13 @@ class SystemStateDispatching(object):
         if (x_max - x_min) != 0:
             result = (x_max - x) / (x_max - x_min)
         return result
+
+    def get_release_list(self, pool_list, work_centre):
+        return_list = []
+        for order_list in pool_list:
+            if order_list[self.index_order_object].routing_sequence[0] == work_centre:
+                return_list.append(order_list)
+        return return_list
 
     def __str__(self):
         return "FOCUS"

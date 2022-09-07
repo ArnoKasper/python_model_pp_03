@@ -5,3 +5,10 @@ Simulation ends
  run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
    1    90.141171 36.292151  0.059594  36.232557       0.059594       10.015941        4.700621       1.195004        9.952379              329.143201          0.514017 ['36.2922', 'nan', 'nan', 'nan']
 Simulation ends
+
+to do:
+- implement DRACO, check release procedure (validate)
+- implement fill rate as performance measure
+- adapt all performance measures
+- implement the setting you want to simulate
+- experiment with DRACO models
