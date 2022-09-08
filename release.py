@@ -63,7 +63,10 @@ class Release(object):
         pool_item = self.pool_item(order=order)
         self.sim.model_panel.POOLS.put(pool_item)
         # activate release mechanism
-        self.activate_release(order=order)
+        if self.sim.policy_panel.release_technique == "DRACO":
+            self.sim.system_state_dispatching.full_control_mode(trigger_mode='arrival', order=order)
+        else:
+            self.activate_release(order=order)
         return
 
     def activate_release(self, work_centre=None, order=None, material_arrival=False):

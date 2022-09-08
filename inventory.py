@@ -80,6 +80,9 @@ class Inventory(object):
         requirements = order.requirements
         if not len(requirements) == 0:
             # control inventories for requirements
+            """
+            depending on the material allocation rule, we see if the materials are available or not
+            """
             if self.sim.policy_panel.material_allocation == 'availability':
                 material_availability_dict = {}
                 for item in requirements:
@@ -106,6 +109,9 @@ class Inventory(object):
             return True
 
     def inventory_update_release(self):
-        self.sim.release.activate_release(material_arrival=True)
+        if self.sim.policy_panel.release_technique == "DRACO":
+            self.sim.system_state_dispatching.full_control_mode(trigger_mode='supply')
+        else:
+            self.sim.release.activate_release(material_arrival=True)
         return
 

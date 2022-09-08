@@ -1,4 +1,5 @@
 import math
+from operator import itemgetter
 import numpy as np
 
 
@@ -49,6 +50,94 @@ class SystemStateDispatching(object):
             self.functions_activated[name] = self.weights[i]
         self.max_impact_list = [0] * len(self.weights)
         return
+
+    def full_control_mode(self, work_centre=None, order=None, trigger_mode='dispatching'):
+        """
+
+        """
+        # depending on the triggering mode, the work centre needs to be found
+        if trigger_mode == 'supply':
+            # control if the queue is not empty
+            if not self.sim.release.control_queue_empty(work_centre=order.routing_sequence[0]):
+                # work centre not starting; return
+                return None, True
+            else:
+                # work centre is idling, needs a new order
+                work_centre = order.routing_sequence[0]
+        elif trigger_mode == 'arrival':
+            for potential_starving_work_centre in self.sim.model_panel.WORK_CENTRES:
+                starving_work_centre = []
+                if self.sim.release.control_queue_empty(work_centre=potential_starving_work_centre):
+                    starving_work_centre.append(potential_starving_work_centre)
+                """
+                there must be a selection procedure when material is scare to identify where to send the order to
+                """
+                # choose work centre
+                if len(starving_work_centre) == 0:
+                    return None, True
+                elif len(starving_work_centre) == 1:
+                    work_centre = starving_work_centre[0]
+                else:
+                    # multiple work centres starving, choose randomly
+                    work_centre = self.sim.random_generator.sample(starving_work_centre, 1)
+
+        # get the orders in the queue and pool
+        queue_list = self.sim.model_panel.QUEUES[work_centre].items.copy()
+        entire_pool_list = self.sim.release.get_release_list()
+        pool_list = self.get_release_list(pool_list=entire_pool_list, work_centre=work_centre)
+
+        # control if dispatching is possible
+        if len(queue_list) + len(pool_list) == 0:
+            # no orders to process, leave the machine idle.
+            return None, True
+
+        # remove impact values previous decision
+        self.max_impact_list = [0] * len(self.weights)
+        # update state variables
+        self.update_system_state_variables(work_centre=work_centre)
+        # get impact of each order in queue or pool
+        dispatching_options = queue_list.extend(pool_list)  # first queue, then pool
+        for i, order_item in enumerate(dispatching_options):
+            projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
+            # attach impact to the order
+            order_item[self.index_priority] = sum(projected_impact_list)
+            # find highest impact for this selection moment
+            if sum(projected_impact_list) > sum(self.max_impact_list):
+                self.max_impact_list = projected_impact_list
+            # - 1 because simulation model minimizes
+            order_item[self.index_priority] = order_item[self.index_priority] * -1
+
+        # select the order with the highest impact
+        order_item = sorted(dispatching_options, key=itemgetter(self.index_priority))[
+            0]  # sort and pick with highest priority
+
+        # find if order is in the pool or queue
+        """
+        if the order is in the pool, it needs to be released, dedicate materials to it and send it to the queue
+        """
+        order_selected = order_item[self.index_order_object]
+        if order_selected.location == "pool":
+            # order in the pool, apply the release procedure
+            # release the order and dedicate materials to it
+            self.sim.release.release(review_condition='immediate', put_in_queue=False)
+            # data collection
+            order_selected.queue_entry_time[work_centre] = self.sim.env.now
+            # first time entering the floor
+            order_selected.release_time = self.sim.env.now
+            order_selected.pool_time = order_selected.release_time - order_selected.entry_time
+            order_selected.first_entry = False
+            order_selected.location = "system"
+
+        # depending on the trigger, send order to the system
+        if trigger_mode in ['supply', 'arrival']:
+            work_centre = order_selected.routing_sequence[0]
+            self.sim.process.dispatch(order=order_selected, work_centre=work_centre)
+        elif trigger_mode == 'dispatching':
+            # set to zero to pull out of pull
+            order_item[self.index_sorting_removal] = 0
+            return False, order_item
+        else:
+            raise Exception('DRACO, no valid triggering condition identified')
 
     def dispatching_mode(self, queue_list, pool_list, work_centre):
         # remove impact values previous decision
