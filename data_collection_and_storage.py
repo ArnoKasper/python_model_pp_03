@@ -69,11 +69,14 @@ class DataCollection(object):
         number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
         df[f"utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
                              / self.sim.model_panel.RUN_TIME)
+        # order information
         df[f"mean_ttt"] = df_run.loc[:, "throughput_time"].mean()
         df[f"mean_ptt"] = df_run.loc[:, "pool_time"].mean()
         df[f"mean_sttt"] = df_run.loc[:, "shop_throughput_time"].mean()
-        df[f"mean_mat_av_t"] = df_run.loc[:, "material_waiting_time"].mean()
-        df[f'mean_mat_rep_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+
+        # material information
+        df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
+        df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
         df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
 
         # due date

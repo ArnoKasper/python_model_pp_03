@@ -41,9 +41,11 @@ class Process(object):
         work_centre = order.routing_sequence[0]
         order.queue_entry_time[work_centre] = self.sim.env.now
 
-        # control if dispatching is needed
+        # put the order in the queue
         queue_item = self.queue_item(order=order, work_centre=work_centre)
         self.sim.model_panel.QUEUES[work_centre].put(queue_item)
+
+        # control if dispatching is needed
         if len(self.sim.model_panel.WORK_CENTRES[work_centre].users) == 0 and dispatch:
             self.dispatch_order(work_centre=work_centre)
             return  # order dispatched, return to avoid duplication
@@ -56,32 +58,15 @@ class Process(object):
                 self.dispatch_order(work_centre=work_centre)
         return
 
-    def release_from_queue(self, work_center):
+    def release_from_queue(self, work_centre):
         """
         removes an order from the queue
-        :param work_center: work_center number indicating the number of the capacity source
+        :param work_centre: work_center number indicating the number of the capacity source
         :return: void
         """
         # sort the queue
-        self.sim.model_panel.QUEUES[work_center].items.sort(key=itemgetter(self.index_sorting_removal))
-        self.sim.model_panel.QUEUES[work_center].get()
-        return
-
-    def pull_from_queue_pool(self, work_center, location):
-        """
-        removes an order from the queue
-        :param work_center: work_center number indicating the number of the capacity source
-        :return: void
-        """
-        if location == "pool":
-            # sort the pool
-            self.sim.release.release(review_condition='immediate', put_in_queue=False)
-        elif location == "system":
-            # sort the queue
-            self.sim.model_panel.QUEUES[work_center].items.sort(key=itemgetter(self.index_sorting_removal))
-            self.sim.model_panel.QUEUES[work_center].get()
-        else:
-            raise Exception(f"{location} is an unknown location")
+        self.sim.model_panel.QUEUES[work_centre].items.sort(key=itemgetter(self.index_sorting_removal))
+        self.sim.model_panel.QUEUES[work_centre].get()
         return
 
     def update_priority(self, order, work_centre):
@@ -110,7 +95,8 @@ class Process(object):
         3: release index
         """
         # set priority
-        self.update_priority(order=order, work_centre=work_centre)
+        if not self.sim.policy_panel.release_technique == "DRACO":
+            self.update_priority(order=order, work_centre=work_centre)
         # get queue list and return
         return self.get_queue_item(order=order, work_centre=work_centre)
 
@@ -124,6 +110,9 @@ class Process(object):
         return queue_item
 
     def dispatch(self, order, work_centre):
+        # remove from the queue
+        self.release_from_queue(work_centre=work_centre)
+
         # set params and start process
         self.work_centre_occupied[work_centre] = True
         order.process = self.sim.env.process(
@@ -191,14 +180,6 @@ class Process(object):
         :param machine: the name of the machine
         :return: void
         """
-        # update info
-        if order.first_entry:
-            # first time entering the floor
-            order.release_time = self.sim.env.now
-            order.pool_time = order.release_time - order.entry_time
-            order.first_entry = False
-            order.location = "system"
-
         # set params
         order.work_center_RQ = self.sim.model_panel.WORK_CENTRES[work_centre]
         req = order.work_center_RQ.request(priority=order.dispatching_priority[work_centre])
@@ -220,7 +201,6 @@ class Process(object):
 
         # update the routing list to avoid re-entrance
         order.routing_sequence.remove(work_centre)
-
         # collect data
         self.data_collection_intermediate(order=order, work_center=work_centre)
 

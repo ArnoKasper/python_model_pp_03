@@ -18,7 +18,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 1  # 00  # number of replications
+        self.NUMBER_OF_RUNS: int = 100  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -63,7 +63,7 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = '2_erlang' # 'exponential' # '2_erlang_truncated'  #
+        self.PROCESS_TIME_DISTRIBUTION =  '2_erlang_truncated'  # '2_erlang' # 'exponential' #
 
         # orders
         """
@@ -74,7 +74,7 @@ class ModelPanel(object):
             - variable: each order request a variable number of items
         """
         self.material_requirements_distribution = 'uniform'
-        self.material_quantity = 2
+        self.material_quantity = 1
         self.material_request = 'constant'
 
         self.order_attributes = {"name": "customized",
@@ -85,7 +85,8 @@ class ModelPanel(object):
 
         # materials
         self.SKU: Dict[...] = {}
-        self.material_types = ['A', 'B']
+        # self.material_types = ['A', 'B']
+        self.material_types = ['A']
         self.materials = {}
         self.expected_replenishment_time = 10
         for type in self.material_types:
@@ -101,7 +102,8 @@ class ModelPanel(object):
         - immediate, i.e., replenishment time is zero.
         - supplier, i.e., replenishment time is non-zero
         """
-        self.DELIVERY = "supplier"
+        # self.DELIVERY = "supplier"
+        self.DELIVERY = "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         return
 
@@ -225,7 +227,7 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
               'measure': 'WIP',
               'periodic': False,
               'continuous': False,
-              'trigger': True,
+              'trigger': False,
               'non_hierarchical': True},
     'CONWIP': {'tracking_variable': 'total',
                'measure': 'WIP',

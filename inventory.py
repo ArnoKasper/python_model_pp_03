@@ -67,8 +67,8 @@ class Inventory(object):
         item_list = self.sim.model_panel.SKU[item].items[0]
         item_list[self.index_sorting_removal] = 0
         self.remove_from_inventory(item=item)
-        order = item_list[self.index_order_object]
-        return order
+        material = item_list[self.index_order_object]
+        return material
 
     def material_availability_check(self, order):
         """

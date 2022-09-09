@@ -1,14 +1,15 @@
-Mean time between arrival: 0.64815
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    89.963349 35.525142   0.97648  34.548662        0.97648       10.081235        2.678849       0.510865        9.596702              331.330778           0.50227 ['35.5251', 'nan', 'nan', 'nan']
-Simulation ends
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_av_t  mean_mat_rep_t  mean_mat_inv_t  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    90.141171 36.292151  0.059594  36.232557       0.059594       10.015941        4.700621       1.195004        9.952379              329.143201          0.514017 ['36.2922', 'nan', 'nan', 'nan']
-Simulation ends
-
-to do:
-- implement DRACO, check release procedure (validate)
-- implement fill rate as performance measure
-- adapt all performance measures
-- implement the setting you want to simulate
-- experiment with DRACO models
+results of experiment InnsbrückProject_:
+FOCUS, settings as in DRACO paper
+                column       mean
+                   run  50.500000
+           utilization  90.188493
+              mean_ttt  18.873305
+              mean_ptt   6.246275
+             mean_sttt  12.627031
+      mean_mat_avail_t   6.246275
+      mean_mat_reple_t   0.000000
+        mean_mat_inv_t   7.121796
+         mean_lateness -23.126695
+        mean_tardiness   0.247844
+mean_squared_tardiness  35.829348
+      percentage_tardy   0.012058

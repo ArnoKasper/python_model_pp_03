@@ -42,7 +42,6 @@ class Order(object):
         self.material_available = False
         self.first_entry = True
         self.in_inventory = False
-        self.dispatch_non_hierarchical = False
 
         # routing sequence params
         if self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] in ["GFS", "PJS"]:

@@ -294,6 +294,15 @@ class Release(object):
         else:
             return break_loop, next_release
 
+    def release_non_hierarchical(self, order_list, order):
+        # contribute load
+        self.contribute_release(order=order)
+        # remove order from pool
+        self.release_from_pool(release_now=order_list)
+        # allocate materials to orders
+        self.dedicate_materials_to_orders(order=order)
+        return
+
     def periodic_release(self):
         """
         Workload Control Periodic release using aggregate load. See workings in Land 2004.
@@ -375,7 +384,9 @@ class Release(object):
             # update tracking variable after each operation is completed
             self.contribute_completed(order=order, work_centre=work_centre)
         # activate release mechanism
-        self.activate_release(work_centre=work_centre)
+        if not self.sim.policy_panel.release_technique == "DRACO":
+            self.activate_release(order=order)
+        return
 
     def material_needs(self):
         # specify material needs for each item
