@@ -21,8 +21,8 @@ class ModelPanel(object):
         self.NUMBER_OF_RUNS: int = 100  # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": 6,
-                                'routing_configuration': 'PJS'}
+        self.SHOP_ATTRIBUTES = {"work_centres": 2,
+                                'routing_configuration': 'PFS'}
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
         # make pool
@@ -63,7 +63,7 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION =  '2_erlang_truncated'  # '2_erlang' # 'exponential' #
+        self.PROCESS_TIME_DISTRIBUTION = 'exponential' # '2_erlang_truncated'  # '2_erlang' #
 
         # orders
         """
@@ -177,8 +177,8 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        self.release_technique = "DRACO"
-        # self.release_technique = "immediate"
+        # self.release_technique = "DRACO"
+        self.release_technique = "immediate"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 

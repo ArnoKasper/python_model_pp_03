@@ -1,15 +1,32 @@
 results of experiment InnsbrückProject_:
-FOCUS, settings as in DRACO paper
                 column       mean
-                   run  50.500000
-           utilization  90.188493
-              mean_ttt  18.873305
-              mean_ptt   6.246275
-             mean_sttt  12.627031
-      mean_mat_avail_t   6.246275
+                   run   5.500000
+           utilization  89.677025
+              mean_ttt  18.318623
+              mean_ptt   5.932493
+             mean_sttt  12.386130
+      mean_mat_avail_t   5.932493
       mean_mat_reple_t   0.000000
-        mean_mat_inv_t   7.121796
-         mean_lateness -23.126695
-        mean_tardiness   0.247844
-mean_squared_tardiness  35.829348
-      percentage_tardy   0.012058
+        mean_mat_inv_t   7.146868
+         mean_lateness -23.681377
+        mean_tardiness   0.202669
+mean_squared_tardiness  23.400104
+      percentage_tardy   0.010604
+
+results of experiment InnsbrückProject_:
+                column       mean
+                   run   5.500000
+           utilization  89.677025
+              mean_ttt  18.318623
+              mean_ptt   5.932493
+             mean_sttt  12.386130
+      mean_mat_avail_t   5.932493
+      mean_mat_reple_t   0.000000
+        mean_mat_inv_t  14.293748
+         mean_lateness -23.681377
+        mean_tardiness   0.202669
+mean_squared_tardiness  23.400104
+      percentage_tardy   0.010604
+
+
+currently, M/M/1 check
