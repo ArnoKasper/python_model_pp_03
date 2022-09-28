@@ -36,9 +36,9 @@ class Supply(object):
     def parallel_delivery(self, item_type):
         mean_replenishment_time = self.sim.model_panel.materials[item_type]['expected_lead_time']
         if self.sim.model_panel.SUPPLY_DISTRIBUTION == 'constant':
-            replenishment_time = mean_replenishment_time
+            shipping_time = mean_replenishment_time
         elif self.sim.model_panel.SUPPLY_DISTRIBUTION == 'exponential':
-            replenishment_time = self.sim.random_generator.expovariate(1 / mean_replenishment_time)
+            shipping_time = self.sim.random_generator.expovariate(1 / mean_replenishment_time)
         else:
             raise Exception(f'unknown replenishment time distribution')
         # get material expected_lead_time
@@ -46,10 +46,10 @@ class Supply(object):
                             identifier=self.sim.generation.identifier(),
                             attributes=self.sim.model_panel.materials[item_type])
         # find replenishment time
-        yield self.sim.env.timeout(replenishment_time)
+        yield self.sim.env.timeout(shipping_time)
         # determine delivery time
-        material.delivery_time = self.sim.env.now
-        material.replenishment_time = replenishment_time
+        material.material_delivery_time = self.sim.env.now
+        material.material_shipping_time = shipping_time
         # put in inventory
         self.sim.inventory.put_in_inventory(order=material)
         return
@@ -74,8 +74,8 @@ class Supply(object):
             # Request is finished, order directly processed
             yield self.sim.env.timeout(replenishment_time)
         # determine delivery time
-        material.delivery_time = self.sim.env.now
-        material.replenishment_time = replenishment_time
+        material.material_delivery_time = self.sim.env.now
+        material.material_shipping_time = replenishment_time
         # put in inventory
         self.sim.inventory.put_in_inventory(order=material)
         return

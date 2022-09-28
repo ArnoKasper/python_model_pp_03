@@ -21,8 +21,8 @@ class ModelPanel(object):
         self.NUMBER_OF_RUNS: int = 100  # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": 2,
-                                'routing_configuration': 'PFS'}
+        self.SHOP_ATTRIBUTES = {"work_centres": 6,
+                                'routing_configuration': 'PJS'}
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
         # make pool
@@ -63,7 +63,7 @@ class ModelPanel(object):
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = 'exponential' # '2_erlang_truncated'  # '2_erlang' #
+        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated' # 'exponential' # '2_erlang' #
 
         # orders
         """
@@ -72,10 +72,11 @@ class ModelPanel(object):
         - material request
             - constant: each order request the same number of items
             - variable: each order request a variable number of items
+            - no_materials: no material needs, for debugging
         """
         self.material_requirements_distribution = 'uniform'
         self.material_quantity = 1
-        self.material_request = 'constant'
+        self.material_request = 'no_materials'
 
         self.order_attributes = {"name": "customized",
                                  "order_type": 'customized',
@@ -128,7 +129,7 @@ class PolicyPanel(object):
         # generation
         """
         types of generation techniques
-            - BSS (Base Stock System)
+            - BSS (base-stock system)
         """
         self.generated = {}
         self.delivered = {}
@@ -177,15 +178,16 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        # self.release_technique = "DRACO"
-        self.release_technique = "immediate"
+        self.release_technique = "DRACO"
+        # self.release_technique = "immediate"
+        # self.release_technique = "LUMS_COR"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 
         # tracking variables
         self.released = 0
         self.completed = 0
-        self.release_target = 5.8
+        self.release_target = 18
 
         # pool rule
         self.sequencing_rule = "PRD"
@@ -195,11 +197,13 @@ class PolicyPanel(object):
         """
         dispatching rules available
             - FCFS
+            - FISFO
             - SLACK
+            - SPT
             - ODD_land, following Land et al. (2014)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = "FCFS"
+        self.dispatching_rule = "SPT" # "FCFS" #
 
         # material allocation
         """
@@ -212,7 +216,7 @@ class PolicyPanel(object):
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 20, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 10, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {

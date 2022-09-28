@@ -325,7 +325,7 @@ class Process(object):
         """
         # order is released, collect data
         order.release_time = self.sim.env.now
-        order.pool_time = order.release_time - order.entry_time
+        order.pool_time = order.release_time - order.material_arrival_time
 
         # adjust ODD according to Land et al., (2014)
         if self.sim.control_panel.dispatching_rule == "ODD":
@@ -395,7 +395,7 @@ class Process(object):
 
         # put all the order performance metrics into list
         df_list.append(order.identifier)
-        df_list.append(order.finishing_time - order.entry_time)
+        df_list.append(order.finishing_time - order.material_arrival_time)
         df_list.append(order.pool_time)
         df_list.append(order.finishing_time - order.release_time)
         df_list.append(order.finishing_time - order.due_date)

@@ -31,7 +31,7 @@ class Process(object):
         if order.first_entry:
             # first time entering the floor
             order.release_time = self.sim.env.now
-            order.pool_time = order.release_time - order.entry_time
+            order.pool_time = order.release_time - order.arrival_time
             order.first_entry = False
             order.location = "system"
             if self.dispatching_rule == "ODD_land":
@@ -73,6 +73,10 @@ class Process(object):
         # select using priority rule
         if self.dispatching_rule == "FCFS":
             order.dispatching_priority[work_centre] = self.sim.env.now
+        elif self.dispatching_rule == "FISFO":
+            order.dispatching_priority[work_centre] = order.arrival_time
+        elif self.dispatching_rule == "SPT":
+            order.dispatching_priority[work_centre] = order.process_time[work_centre]
         elif self.dispatching_rule == "SLACK":
             order.dispatching_priority[work_centre] = order.due_date - self.sim.env.now - order.remaining_process_time
         elif self.dispatching_rule == "ODD_land":
@@ -252,13 +256,13 @@ class Process(object):
         df_list = list()
         df_list.append(order.identifier)
         df_list.append(order.name)
-        df_list.append(order.completion_time - order.entry_time)
+        df_list.append(order.completion_time - order.arrival_time)
         df_list.append(order.pool_time)
         df_list.append(order.completion_time - order.release_time)
         df_list.append(order.completion_time - order.due_date)
         df_list.append(max(0, (order.completion_time - order.due_date)))
         df_list.append(max(0, self.heavenside(x=(order.completion_time - order.due_date))))
-        df_list.append(order.material_available_time - order.entry_time)
+        df_list.append(order.material_available_time - order.arrival_time)
         df_list.append(order.material_replenishment_time)
         df_list.append(order.inventory_time)
 

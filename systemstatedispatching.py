@@ -18,9 +18,9 @@ class SystemStateDispatching(object):
         self.activate_inventory = True
 
         # release
-        self.activate_release_WIP_target = False
+        self.activate_release_WIP_target = True
         if self.activate_release_WIP_target:
-            self.WIP_target = 18
+            self.WIP_target = self.sim.policy_panel.release_target
         self.current_queue_list = []
         self.current_pool_list = []
         self.number_of_orders_in_system = 0
@@ -32,6 +32,7 @@ class SystemStateDispatching(object):
         self.A_dict = dict()
         self.S_list = list()
         self.V_list = list()
+        self.P_j = list()
 
         self.p_ij_min = 0
         self.p_ij_mean = 0
@@ -67,7 +68,12 @@ class SystemStateDispatching(object):
                 return None, True
             else:
                 # work centre is idling, needs a new order
-                work_centre = order.routing_sequence[0]
+                # material check
+                if self.sim.inventory.material_availability_check(order=order):
+                    work_centre = order.routing_sequence[0]
+                else:
+                    # work centre starving, but materials are not there
+                    return None, True
         elif trigger_mode == 'supply':
             for potential_starving_work_centre in self.sim.model_panel.WORK_CENTRES:
                 starving_work_centre = []
@@ -84,12 +90,11 @@ class SystemStateDispatching(object):
                 else:
                     # multiple work centres starving, choose randomly
                     work_centre = self.sim.random_generator.sample(starving_work_centre, 1)
-                    print('yes')
+                    print('random choice made!')
 
         # get the orders in the queue and pool
         queue_list = self.sim.model_panel.QUEUES[work_centre].items.copy()
         entire_pool_list, pool_empty = self.sim.release.get_release_list()
-
         # check orders in pool
         if not pool_empty:
             # find the orders in the pool that start at work centre
@@ -121,8 +126,7 @@ class SystemStateDispatching(object):
             order_item[self.index_priority] = order_item[self.index_priority] * -1
 
         # select the order with the highest impact
-        order_list = sorted(dispatching_options, key=itemgetter(self.index_priority))[
-            0]  # sort and pick with highest priority
+        order_list = sorted(dispatching_options, key=itemgetter(self.index_priority))[0]
 
         # indicate that the order must be removed
         order_list[self.index_sorting_removal] = 0
@@ -140,15 +144,14 @@ class SystemStateDispatching(object):
             order_selected.queue_entry_time[work_centre] = self.sim.env.now
             # first time entering the floor
             order_selected.release_time = self.sim.env.now
-            order_selected.pool_time = order_selected.release_time - order_selected.entry_time
+            order_selected.pool_time = order_selected.release_time - order_selected.arrival_time
             order_selected.first_entry = False
             order_selected.location = "system"
             # put the order in the queue
             queue_item = self.sim.process.queue_item(order=order_selected, work_centre=work_centre)
             self.sim.model_panel.QUEUES[work_centre].put(queue_item)
-            queue_item[self.index_sorting_removal] = 0
+            queue_item[self.index_sorting_removal] = 0  # indicate that the order can be dispatched
 
-        # print(trigger_mode, order_selected, order_selected.routing_sequence)
         # depending on the trigger, send order to the system
         if trigger_mode in ['supply', 'arrival']:
             self.sim.process.dispatch(order=order_selected, work_centre=work_centre)
@@ -158,21 +161,22 @@ class SystemStateDispatching(object):
             raise Exception('DRACO, no valid triggering condition identified')
 
     def _get_weighted_impact(self, order_item, work_centre):
+        order = order_item[self.index_order_object]
         # params
-        process_time = order_item[self.index_order_object].process_time[work_centre]
-        process_times = order_item[self.index_order_object].process_time.copy()
-        routing_list = order_item[self.index_order_object].routing_sequence.copy()
+        process_time = order.process_time[work_centre]
+        process_times = order.process_time.copy()
+        routing_list = order.routing_sequence.copy()
         slack = self.slack(
-            d_i=order_item[self.index_order_object].due_date,
+            d_i=order.due_date,
             t=self.sim.env.now,
             k=1,
-            sum_p_ij=order_item[self.index_order_object].remaining_process_time
+            sum_p_ij=order.remaining_process_time
         )
         slack_opn = self.slack(
-            d_i=order_item[self.index_order_object].due_date,
+            d_i=order.due_date,
             t=self.sim.env.now,
             k=len(routing_list),
-            sum_p_ij=order_item[self.index_order_object].remaining_process_time
+            sum_p_ij=order.remaining_process_time
         )
 
         # get projected impact values
@@ -221,7 +225,7 @@ class SystemStateDispatching(object):
         # obtain xi
         if self.functions_activated["xi"] > 0:
             return_value = self.xi_idleness_impact(
-                order=order_item[self.index_order_object],
+                order=order,
                 process_time=process_time,
                 upstream_starvation_dict=self.A_dict
             )
@@ -248,8 +252,9 @@ class SystemStateDispatching(object):
         dispatching_impact = sum([j * 1/len(dispatching_impact) for j in dispatching_impact])
 
         # aggregate all impact functions into list
-        projected_impact = [dispatching_impact * 1/3, release_impact * 1/3, inventory_impact * 1/3]
-
+        # projected_impact = [dispatching_impact * 1/3, release_impact * 1/3, inventory_impact * 1/3]
+        # projected_impact = [dispatching_impact]
+        projected_impact = [pi_pij_impact + tau_slack_impact]
         return projected_impact
 
     def update_system_state_variables(self, work_centre):
@@ -286,7 +291,6 @@ class SystemStateDispatching(object):
                 process_times = []
                 for k, operation in enumerate(processing_order.routing_sequence):
                     process_times.append(processing_order.process_time[operation])
-
                 # order params
                 slack, slack_opn = self.get_dispatching_variables(order=processing_order)
                 self.append_system_state_variables(
@@ -303,7 +307,6 @@ class SystemStateDispatching(object):
                 process_times = []
                 for k, operation in enumerate(processing_order.routing_sequence):
                     process_times.append(processing_order.process_time[operation])
-
                 # order params
                 slack, slack_opn = self.get_dispatching_variables(order=processing_order)
                 self.append_system_state_variables(
@@ -331,15 +334,29 @@ class SystemStateDispatching(object):
             self.slack_opn_max = max(self.V_list)
             self.slack_opn_mean = sum(self.V_list) / len(self.V_list)
 
-        # virtual WIP
+        # order book
         self.number_of_orders_in_system = len(self.V_list)
 
         # find if a work centre is starving
         if self.functions_activated["xi"] > 0:
             for j, WC in enumerate(self.work_centre_layout):
                 if WC != work_centre:
-                    if len(self.sim.model_panel.QUEUES[WC].items) == 0 \
-                            and len(self.sim.model_panel.POOLS.items) == 0:
+                    """
+                    this might not be correct yet! 
+                        - not sure if the pool partitioning is incorrect
+                        -  
+                    """
+
+                    # get the pool
+                    pool, _ = self.sim.release.get_release_list()
+                    if pool is not None:
+                        # split pool into subsets based on their gateway.
+                        pool_WC = self.get_release_list(pool_list=pool, work_centre=WC)
+                    else:
+                        pool_WC = None
+
+                    # indicate gateway
+                    if len(self.sim.model_panel.QUEUES[WC].items) == 0 and pool_WC is None:
                         self.A_dict[WC] = 1
                     else:
                         self.A_dict[WC] = 0
@@ -399,5 +416,5 @@ class SystemStateDispatching(object):
         return return_list
 
     def __str__(self):
-        return "FOCUS"
+        return "DRACO"
 

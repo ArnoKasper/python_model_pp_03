@@ -385,7 +385,7 @@ class Release(object):
             self.contribute_completed(order=order, work_centre=work_centre)
         # activate release mechanism
         if not self.sim.policy_panel.release_technique == "DRACO":
-            self.activate_release(order=order)
+            self.activate_release(work_centre=work_centre)
         return
 
     def material_needs(self):

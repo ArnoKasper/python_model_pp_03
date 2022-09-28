@@ -25,11 +25,13 @@ class Order(object):
         elif self.sim.model_panel.material_request == "variable":
             nr_materials = self.sim.random_generator.randint(1, self.sim.model_panel.material_quantity)
             self.requirements = self.sim.random_generator.sample(requirements, nr_materials)
+        elif self.sim.model_panel.material_request == "no_materials":
+            self.requirements = []
         else:
             raise Exception("no valid material request procedure")
 
         # data params
-        self.entry_time = self.sim.env.now
+        self.arrival_time = self.sim.env.now
         self.material_available_time = 0
         self.release_time = 0
         self.pool_time = 0
@@ -137,8 +139,8 @@ class Order(object):
 
     def update_material_data(self):
         if len(self.materials) > 0:
-            self.material_replenishment_time = self.materials[0].delivery_time - self.materials[0].entry_time
-            self.inventory_time = self.materials[0].allocation_time - self.materials[0].delivery_time
+            self.material_replenishment_time = self.materials[0].material_shipping_time
+            self.inventory_time = self.materials[0].material_commitment_time - self.materials[0].material_delivery_time
         else:
             self.material_replenishment_time = 0
             self.inventory_time = 0
@@ -167,10 +169,10 @@ class Material(object):
         self.type = self.attributes['name']
         self.name = f"material_{self.attributes['name']}_{'%07d' % self.identifier}"
 
-        self.entry_time = self.sim.env.now
-        self.delivery_time = self.sim.env.now
-        self.replenishment_time = 0
-        self.allocation_time = self.sim.env.now
+        self.material_arrival_time = self.sim.env.now
+        self.material_delivery_time = self.sim.env.now
+        self.material_shipping_time = 0
+        self.material_commitment_time = 0
 
     def __str__(self):
         return self.name

@@ -28,7 +28,7 @@ class Inventory(object):
     def inventory_item(order):
         inventory_item = [1, # removal integer
                           order,
-                          order.delivery_time,
+                          order.material_delivery_time,
                           order.name
                           ]
         return inventory_item
@@ -57,7 +57,7 @@ class Inventory(object):
         for component in requirements:
             # pick component and remove from inventory
             material = self.get_inventory_item(item=component)
-            material.allocation_time = self.sim.env.now
+            material.material_commitment_time = self.sim.env.now
             # update data and add to material list
             material_list.append(material)
         return material_list

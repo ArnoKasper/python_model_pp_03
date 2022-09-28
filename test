@@ -1,32 +1,24 @@
-results of experiment InnsbrückProject_:
-                column       mean
-                   run   5.500000
-           utilization  89.677025
-              mean_ttt  18.318623
-              mean_ptt   5.932493
-             mean_sttt  12.386130
-      mean_mat_avail_t   5.932493
-      mean_mat_reple_t   0.000000
-        mean_mat_inv_t   7.146868
-         mean_lateness -23.681377
-        mean_tardiness   0.202669
-mean_squared_tardiness  23.400104
-      percentage_tardy   0.010604
+check:
+- isolated M/M/1 check: validated
+- isolated base-stock: validated
+- LUMS COR & ODD: validated
+- SPT (via DRACO procedure and no materials): validated, exactly the same as code pp_05
+- FISFO (via IMM procedure and immediate material delivery): validated, exactly the same as code pp_05
+- isolated FOCUS with only pi, slack or sopn: VALIDATED
+- isolated FOCUS with various combiations of pi, slack and sopn: NOT VALIDATED
+- isolated DRACO:
 
-results of experiment InnsbrückProject_:
-                column       mean
-                   run   5.500000
-           utilization  89.677025
-              mean_ttt  18.318623
-              mean_ptt   5.932493
-             mean_sttt  12.386130
-      mean_mat_avail_t   5.932493
-      mean_mat_reple_t   0.000000
-        mean_mat_inv_t  14.293748
-         mean_lateness -23.681377
-        mean_tardiness   0.202669
-mean_squared_tardiness  23.400104
-      percentage_tardy   0.010604
+so
+- sequecing process correct
+- material allowcation, reorder ect. correct
+- material checks and commitment correct
 
 
-currently, M/M/1 check
+# correct result focus, with pi and tau only!
+run number 1 [>...................................................................................................] 1.0% replication statistics: ['18.9646', 'nan', 'nan', 'nan']
+ run  utilization  mean_throughput_time  std_throughput_time  mean_process_throughput_time  mean_lateness  std_lateness  mean_tardiness  std_tardiness  mean_squared_tardiness  percentage_tardy  mean_entropy  mean_first_queue_dispatching_time  mean_earliness       name  hierarchical_order_release  hierarchical_order_authorization         dispatching_mode dispatching_rule  ssd_order_release  ssd_order_authorization release_target authorization_target dd_tightness  dd_type
+   1    90.724245             18.964573            18.201106                     18.964573     -23.035427     18.201106        0.913382      12.723902              162.721444            0.0318      1.479763                          11.669251       23.948809 FOCUS test                       False                             False system_state_dispatching            FOCUS              False                    False           None                 None        loose constant
+Warm-up period finished
+run number 2 [=>..................................................................................................] 2.0% replication statistics: ['17.7533', '2.3625', '33.1441', '86.6926']
+ run  utilization  mean_throughput_time  std_throughput_time  mean_process_throughput_time  mean_lateness  std_lateness  mean_tardiness  std_tardiness  mean_squared_tardiness  percentage_tardy  mean_entropy  mean_first_queue_dispatching_time  mean_earliness       name  hierarchical_order_release  hierarchical_order_authorization         dispatching_mode dispatching_rule  ssd_order_release  ssd_order_authorization release_target authorization_target dd_tightness  dd_type
+   2    89.602117             16.542011            14.286039                     16.542011     -25.457989     14.286039        0.438186       8.479754               72.093531          0.017344      1.481247                          10.619629       25.896175 FOCUS test                       False                             False system_state_dispatching            FOCUS              False                    False           None                 None        loose constant
