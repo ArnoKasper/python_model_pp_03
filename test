@@ -14,7 +14,7 @@ so
 - material checks and commitment correct
 
 
-# correct result focus, with pi and tau only!
+# correct result focus, with pi and tau only! (both from pp_02 & pp_05)
 run number 1 [>...................................................................................................] 1.0% replication statistics: ['18.9646', 'nan', 'nan', 'nan']
  run  utilization  mean_throughput_time  std_throughput_time  mean_process_throughput_time  mean_lateness  std_lateness  mean_tardiness  std_tardiness  mean_squared_tardiness  percentage_tardy  mean_entropy  mean_first_queue_dispatching_time  mean_earliness       name  hierarchical_order_release  hierarchical_order_authorization         dispatching_mode dispatching_rule  ssd_order_release  ssd_order_authorization release_target authorization_target dd_tightness  dd_type
    1    90.724245             18.964573            18.201106                     18.964573     -23.035427     18.201106        0.913382      12.723902              162.721444            0.0318      1.479763                          11.669251       23.948809 FOCUS test                       False                             False system_state_dispatching            FOCUS              False                    False           None                 None        loose constant
@@ -22,3 +22,11 @@ Warm-up period finished
 run number 2 [=>..................................................................................................] 2.0% replication statistics: ['17.7533', '2.3625', '33.1441', '86.6926']
  run  utilization  mean_throughput_time  std_throughput_time  mean_process_throughput_time  mean_lateness  std_lateness  mean_tardiness  std_tardiness  mean_squared_tardiness  percentage_tardy  mean_entropy  mean_first_queue_dispatching_time  mean_earliness       name  hierarchical_order_release  hierarchical_order_authorization         dispatching_mode dispatching_rule  ssd_order_release  ssd_order_authorization release_target authorization_target dd_tightness  dd_type
    2    89.602117             16.542011            14.286039                     16.542011     -25.457989     14.286039        0.438186       8.479754               72.093531          0.017344      1.481247                          10.619629       25.896175 FOCUS test                       False                             False system_state_dispatching            FOCUS              False                    False           None                 None        loose constant
+
+gaat mis rond tijd:
+171.74175099438332
+- zowel met slack as met process tijden gaat het mist
+e.g., 171.74175099438332 met slack
+e.g., 185.96888097973022 met processtijd
+
+later worden de waardes ook anders door verschillen in data

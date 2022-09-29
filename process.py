@@ -81,6 +81,8 @@ class Process(object):
             order.dispatching_priority[work_centre] = order.due_date - self.sim.env.now - order.remaining_process_time
         elif self.dispatching_rule == "ODD_land":
             order.dispatching_priority[work_centre] = order.ODDs[work_centre]
+        elif self.dispatching_rule == "FOCUS":
+            order.dispatching_priority[work_centre] = 0
         else:
             raise Exception("no valid priority rule defined")
         return
@@ -156,8 +158,15 @@ class Process(object):
         # if there are no items in the queue, return
         if len(self.sim.model_panel.QUEUES[work_centre].items) == 0:
             return None, True
-        # get the list of queueing items
-        dispatching_options = self.sim.model_panel.QUEUES[work_centre].items
+
+        # update queue list depending on dispatching mode
+        if self.dispatching_rule == "FOCUS":
+            queue_list = self.sim.model_panel.QUEUES[work_centre].items
+            dispatching_options = self.sim.system_state_dispatching.dispatching_mode(queue_list=queue_list,
+                                                                            work_centre=work_centre)
+        else:
+            # get the list of queueing items
+            dispatching_options = self.sim.model_panel.QUEUES[work_centre].items
         # setup params
         dispatching_list = list()
         # find order with highest impact or priority

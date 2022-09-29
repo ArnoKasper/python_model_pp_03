@@ -201,9 +201,10 @@ class PolicyPanel(object):
             - SLACK
             - SPT
             - ODD_land, following Land et al. (2014)
+            - FOCUS, following Kasper et al. (2023)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = "SPT" # "FCFS" #
+        self.dispatching_rule = "FOCUS" # "FCFS" #
 
         # material allocation
         """

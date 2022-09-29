@@ -52,6 +52,26 @@ class SystemStateDispatching(object):
         self.max_impact_list = [0] * len(self.weights)
         return
 
+    def dispatching_mode(self, queue_list, work_centre):
+        """
+        assumes the use of IMM as release procedure
+        """
+        # remove impact values previous decision
+        self.max_impact_list = [0] * len(self.weights)
+        # update state variables
+        self.update_system_state_variables(work_centre=work_centre)
+        # get impact of each order in queue
+        for i, order_item in enumerate(queue_list):
+            projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
+            # attach impact to the order
+            order_item[self.index_priority] = sum(projected_impact_list)
+            # find highest impact for this selection moment
+            if sum(projected_impact_list) > sum(self.max_impact_list):
+                self.max_impact_list = projected_impact_list
+            # - 1 because simulation model minimizes
+            order_item[self.index_priority] = order_item[self.index_priority] * -1
+        return queue_list
+
     def full_control_mode(self, work_centre=None, order=None, trigger_mode='dispatching'):
         """
         control approach of DRACO
@@ -333,7 +353,7 @@ class SystemStateDispatching(object):
             self.slack_opn_min = min(self.V_list)
             self.slack_opn_max = max(self.V_list)
             self.slack_opn_mean = sum(self.V_list) / len(self.V_list)
-
+        print(f"{self.sim.env.now}: p_ij_max: {self.p_ij_max} slack_max: {self.slack_max} slack_opn_max: {self.slack_opn_max}")
         # order book
         self.number_of_orders_in_system = len(self.V_list)
 
