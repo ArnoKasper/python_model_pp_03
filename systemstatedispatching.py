@@ -133,7 +133,7 @@ class SystemStateDispatching(object):
         # update state variables
         self.update_system_state_variables(work_centre=work_centre)
         # get impact of each order in queue or pool
-        dispatching_options = queue_list + pool_list  # first queue, then pool
+        dispatching_options = pool_list + queue_list  # first queue, then pool
         # loop over all orders
         for i, order_item in enumerate(dispatching_options):
             projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
@@ -218,14 +218,14 @@ class SystemStateDispatching(object):
         if self.activate_release_WIP_target:
             rho = 0
             # release (order in pool)
-            if order_item[self.index_order_object].first_entry:
+            if order.first_entry:
                 # more orders in the system than cap
                 if self.WIP < (2*self.WIP_target):
                     rho = 1 - (self.WIP / (2*self.WIP_target))
                 else:
                     rho = 0
             # release (order in queue)
-            if not order_item[self.index_order_object].first_entry:
+            if not order.first_entry:
                 # more load in the system than target
                 if self.WIP < (2*self.WIP_target):
                     rho = (self.WIP / (2*self.WIP_target))
@@ -272,9 +272,7 @@ class SystemStateDispatching(object):
         dispatching_impact = sum([j * 1/len(dispatching_impact) for j in dispatching_impact])
 
         # aggregate all impact functions into list
-        # projected_impact = [dispatching_impact * 1/3, release_impact * 1/3, inventory_impact * 1/3]
-        # projected_impact = [dispatching_impact]
-        projected_impact = [pi_pij_impact + tau_slack_impact]
+        projected_impact = [dispatching_impact * 1/2, release_impact * 1/2]
         return projected_impact
 
     def update_system_state_variables(self, work_centre):
@@ -320,7 +318,7 @@ class SystemStateDispatching(object):
                 )
 
             # get state information from orders currently in queues
-            for i, queueing_order in enumerate(self.sim.model_panel.QUEUES[work_centre].items):
+            for i, queueing_order in enumerate(self.sim.model_panel.QUEUES[WC].items):
                 self.WIP += 1
                 processing_order = queueing_order[self.index_order_object]
                 # pick remaining process time
@@ -353,7 +351,7 @@ class SystemStateDispatching(object):
             self.slack_opn_min = min(self.V_list)
             self.slack_opn_max = max(self.V_list)
             self.slack_opn_mean = sum(self.V_list) / len(self.V_list)
-        print(f"{self.sim.env.now}: p_ij_max: {self.p_ij_max} slack_max: {self.slack_max} slack_opn_max: {self.slack_opn_max}")
+
         # order book
         self.number_of_orders_in_system = len(self.V_list)
 
@@ -361,22 +359,19 @@ class SystemStateDispatching(object):
         if self.functions_activated["xi"] > 0:
             for j, WC in enumerate(self.work_centre_layout):
                 if WC != work_centre:
-                    """
-                    this might not be correct yet! 
-                        - not sure if the pool partitioning is incorrect
-                        -  
-                    """
-
                     # get the pool
                     pool, _ = self.sim.release.get_release_list()
                     if pool is not None:
                         # split pool into subsets based on their gateway.
                         pool_WC = self.get_release_list(pool_list=pool, work_centre=WC)
+                        if len(pool_WC) > 0:
+                            pool_empty = False
+                        else:
+                            pool_empty = True
                     else:
-                        pool_WC = None
-
-                    # indicate gateway
-                    if len(self.sim.model_panel.QUEUES[WC].items) == 0 and pool_WC is None:
+                        pool_empty = True
+                    # indicate empty gateway
+                    if len(self.sim.model_panel.QUEUES[WC].items) == 0 and pool_empty:
                         self.A_dict[WC] = 1
                     else:
                         self.A_dict[WC] = 0

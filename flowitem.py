@@ -1,3 +1,5 @@
+import numpy as np
+
 class Order(object):
     def __init__(self,
                  simulation,
@@ -19,12 +21,12 @@ class Order(object):
         # settings check
         if len(requirements) < self.sim.model_panel.material_quantity:
             raise Exception("higher quantity requested than possible")
-        # determine material requirement
+
         if self.sim.model_panel.material_request == "constant":
-            self.requirements = self.sim.random_generator.sample(requirements, self.sim.model_panel.material_quantity)
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(requirements, self.sim.model_panel.material_quantity)
         elif self.sim.model_panel.material_request == "variable":
-            nr_materials = self.sim.random_generator.randint(1, self.sim.model_panel.material_quantity)
-            self.requirements = self.sim.random_generator.sample(requirements, nr_materials)
+            nr_materials = self.sim.NP_random_generator['inventory'].choice(self.sim.model_panel.material_quantity, 1) + 1
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(requirements, nr_materials)
         elif self.sim.model_panel.material_request == "no_materials":
             self.requirements = []
         else:

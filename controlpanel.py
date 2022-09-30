@@ -76,7 +76,7 @@ class ModelPanel(object):
         """
         self.material_requirements_distribution = 'uniform'
         self.material_quantity = 1
-        self.material_request = 'no_materials'
+        self.material_request = 'constant'
 
         self.order_attributes = {"name": "customized",
                                  "order_type": 'customized',
@@ -86,10 +86,10 @@ class ModelPanel(object):
 
         # materials
         self.SKU: Dict[...] = {}
-        # self.material_types = ['A', 'B']
-        self.material_types = ['A']
+        self.material_types = ['A', 'B', 'C', 'D', 'E', "F"]
+        # self.material_types = ['A']
         self.materials = {}
-        self.expected_replenishment_time = 10
+        self.expected_replenishment_time = 5
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
@@ -103,8 +103,8 @@ class ModelPanel(object):
         - immediate, i.e., replenishment time is zero.
         - supplier, i.e., replenishment time is non-zero
         """
-        # self.DELIVERY = "supplier"
-        self.DELIVERY = "immediate"
+        self.DELIVERY = "supplier"
+        # self.DELIVERY = "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         return
 
@@ -187,7 +187,7 @@ class PolicyPanel(object):
         # tracking variables
         self.released = 0
         self.completed = 0
-        self.release_target = 18
+        self.release_target = 28
 
         # pool rule
         self.sequencing_rule = "PRD"
@@ -204,7 +204,7 @@ class PolicyPanel(object):
             - FOCUS, following Kasper et al. (2023)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = "FOCUS" # "FCFS" #
+        self.dispatching_rule = "FOCUS" # "FOCUS" #
 
         # material allocation
         """
@@ -217,7 +217,7 @@ class PolicyPanel(object):
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 10, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 5, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {

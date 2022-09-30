@@ -62,13 +62,19 @@ class Inventory(object):
             material_list.append(material)
         return material_list
 
-    def get_inventory_item(self, item, demand_time=0):
+    def get_inventory_item(self, item):
         self.sim.model_panel.SKU[item].items.sort(key=itemgetter(self.index_sorting_removal))
         item_list = self.sim.model_panel.SKU[item].items[0]
         item_list[self.index_sorting_removal] = 0
         self.remove_from_inventory(item=item)
         material = item_list[self.index_order_object]
         return material
+
+    def inventory_availability_check(self, item, amount=1):
+        if len(self.sim.model_panel.SKU[item].items) >= amount:
+            return True
+        else:
+            return False
 
     def material_availability_check(self, order):
         """
@@ -87,7 +93,7 @@ class Inventory(object):
                 material_availability_dict = {}
                 for item in requirements:
                     # assume unique stock keeping unit for each item
-                    if len(self.sim.model_panel.SKU[item].items) != 0:
+                    if self.inventory_availability_check(item=item):
                         # inventory available, pick component
                         material_availability_dict[item] = True
                     else:

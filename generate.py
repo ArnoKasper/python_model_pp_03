@@ -40,7 +40,7 @@ class Generation(object):
         if self.sim.generation_process[item_type] == 'BSS':
             inventory_level = len(self.sim.model_panel.SKU[item_type].items)
             in_process = self.generation_attributes[item_type]['generated'] - self.generation_attributes[item_type]['delivered']
-
+            in_pipeline = in_process - inventory_level
             # determine how material reorder policy
             if self.sim.policy_panel.material_reordering == "arrival":
                 material_needs = self.sim.release.material_needs()
@@ -51,11 +51,13 @@ class Generation(object):
                 raise Exception(f"material reorder policy unknown")
 
             # control if loop allows new generation
-            if (inventory_level + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point'] + 1:
+            if (in_pipeline + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point'] + 1:
                 if self.sim.model_panel.DELIVERY == "supplier":
                     if not warmup:
+                        # send a replenishment order ot the supplier
                         self.generate_and_replenish(item_type=item_type)
                     elif warmup:
+                        # for warmup, the orders are directly placed in the inventory
                         self.generate_and_put_in_inventory(item_type=item_type)
                 elif self.sim.model_panel.DELIVERY == "immediate":
                     self.generate_and_put_in_inventory(item_type=item_type)

@@ -260,7 +260,7 @@ class Process(object):
         """
         # update order data
         order.update_material_data()
-
+        # print(order.release_time)
         # setup list
         df_list = list()
         df_list.append(order.identifier)

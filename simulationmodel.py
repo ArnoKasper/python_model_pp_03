@@ -32,8 +32,24 @@ class SimulationModel(object):
         self.warm_up: bool = True
 
         # Set seed for specifically process times and other random generators
+        """
+        various common random number streams are used
+        - from the module Random(), this is used for orders, and the shop floor
+        - from the module Numpy, this is for the inventory process
+        - from the module 
+        """
+        # order random number stream
         self.random_generator: Random = Random()
         self.random_generator.seed(999999)
+
+        # numpy common random number streams
+        self.NP_random_generator = {}
+        streams_for = ['inventory', 'supply']
+        self.seed_sequence = np.random.SeedSequence(12345)
+        self.child_seeds = self.seed_sequence.spawn(len(streams_for))
+        streams = [np.random.default_rng(s) for s in self.child_seeds]
+        for s, stream in enumerate(streams):
+            self.NP_random_generator[streams_for[s]] = stream
 
         # import the Simpy environment
         self.env: Environment = Environment()
