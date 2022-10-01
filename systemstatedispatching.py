@@ -88,8 +88,12 @@ class SystemStateDispatching(object):
                 return None, True
             else:
                 # work centre is idling, needs a new order
-                # material check
-                if self.sim.inventory.material_availability_check(order=order):
+                # material check, update allocation variables if rationing is used
+                if self.sim.policy_panel.material_allocation == 'rationing':
+                    self.sim.inventory.rationing_sequence_update()
+                # do the material check
+                if self.sim.inventory.material_check(order=order):
+                    # material available, allow for release.
                     work_centre = order.routing_sequence[0]
                 else:
                     # work centre starving, but materials are not there

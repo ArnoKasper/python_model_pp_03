@@ -9,9 +9,9 @@ class Process(object):
         :param simulation: simulation object
         """
         self.sim = simulation
-        self.index_sorting_removal = 0
-        self.index_order_object = 1
-        self.index_priority = 2
+        self.index_sorting_removal = self.sim.model_panel.index_sorting_removal
+        self.index_order_object = self.sim.model_panel.index_order_object
+        self.index_priority = self.sim.model_panel.index_priority
         self.dispatching_rule = self.sim.policy_panel.dispatching_rule
         self.random_generator = random.Random()
         self.random_generator.seed(999999)

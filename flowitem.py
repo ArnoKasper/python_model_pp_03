@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Order(object):
     def __init__(self,
                  simulation,
@@ -23,14 +24,24 @@ class Order(object):
             raise Exception("higher quantity requested than possible")
 
         if self.sim.model_panel.material_request == "constant":
-            self.requirements = self.sim.NP_random_generator['inventory'].choice(requirements, self.sim.model_panel.material_quantity)
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=requirements,
+                                                                                 size=self.sim.model_panel.material_quantity,
+                                                                                 replace=False
+                                                                                 )
         elif self.sim.model_panel.material_request == "variable":
-            nr_materials = self.sim.NP_random_generator['inventory'].choice(self.sim.model_panel.material_quantity, 1) + 1
-            self.requirements = self.sim.NP_random_generator['inventory'].choice(requirements, nr_materials)
+            nr_materials = self.sim.NP_random_generator['inventory'].choice(a=self.sim.model_panel.material_quantity,
+                                                                            size=1,
+                                                                            replace=False) + 1
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=requirements,
+                                                                                 size=nr_materials,
+                                                                                 replace=False)
         elif self.sim.model_panel.material_request == "no_materials":
             self.requirements = []
         else:
             raise Exception("no valid material request procedure")
+
+        # material priority
+        self.material_priority = 0
 
         # data params
         self.arrival_time = self.sim.env.now
@@ -69,7 +80,7 @@ class Order(object):
         self.process_time_cumulative = 0
         self.remaining_process_time = 0
 
-        # priority
+        # dispatching priority
         self.dispatching_priority = {}
         for i, work_centre in enumerate(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT):
             self.dispatching_priority[work_centre] = 0

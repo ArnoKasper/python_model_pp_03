@@ -8,11 +8,11 @@ class Inventory(object):
         :param simulation: simulation object
         """
         self.sim = simulation
-        self.index_sorting_removal = 0
-        self.index_order_object = 1
-        self.index_priority = 2
+        self.index_sorting_removal = self.sim.model_panel.index_sorting_removal
+        self.index_order_object = self.sim.model_panel.index_order_object
+        self.index_priority = self.sim.model_panel.index_priority
         self.materials = self.sim.model_panel.materials
-
+        self.material_sequence = {}
         return
 
     def put_in_inventory(self, order):
@@ -26,7 +26,7 @@ class Inventory(object):
 
     @staticmethod
     def inventory_item(order):
-        inventory_item = [1, # removal integer
+        inventory_item = [1,  # removal integer
                           order,
                           order.material_delivery_time,
                           order.name
@@ -76,7 +76,7 @@ class Inventory(object):
         else:
             return False
 
-    def material_availability_check(self, order):
+    def material_check(self, order):
         """
         check of the materials are available
         :param requirements: list with the name of the materials that need to be collected
@@ -85,28 +85,34 @@ class Inventory(object):
         # control material requirements, if none, release
         requirements = order.requirements
         if not len(requirements) == 0:
-            # control inventories for requirements
-            """
-            depending on the material allocation rule, we see if the materials are available or not
-            """
-            if self.sim.policy_panel.material_allocation == 'availability':
-                material_availability_dict = {}
-                for item in requirements:
-                    # assume unique stock keeping unit for each item
-                    if self.inventory_availability_check(item=item):
-                        # inventory available, pick component
-                        material_availability_dict[item] = True
-                    else:
-                        material_availability_dict[item] = False
-            else:
-                raise Exception(f'unknown material availability rule {self.sim.policy_panel.material_allocation_rule}')
-            # control if material requirements are satisfied, if not continue
-            if all(available == True for available in material_availability_dict.values()):
-                # collect data
+            # control inventories for the required item
+            availability_dict = {}
+            # check availability for each item
+            for item in requirements:
+                # allocate material based on allocation policy
+                if self.sim.policy_panel.material_allocation == 'rationing':
+                    inventory_level = self.material_sequence[item][order.identifier]
+                elif self.sim.policy_panel.material_allocation == 'availability':
+                    inventory_level = 1
+                else:
+                    raise Exception(
+                        f'unknown material allocation policy {self.sim.policy_panel.material_allocation_rule}')
+
+                # check materials
+                if self.inventory_availability_check(item=item, amount=inventory_level):
+                    # inventory available, pick component
+                    availability_dict[item] = True
+                else:
+                    availability_dict[item] = False
+
+            # control if all the orders material requirements are satisfied
+            if all(available == True for available in availability_dict.values()):
+                # collect data, check if this is the first time when the materials are available
                 if not order.material_available:
                     order.material_available_time = self.sim.env.now
                 return True
             else:
+                # materials not available for this order
                 return False
         else:
             # collect data
@@ -121,3 +127,21 @@ class Inventory(object):
             self.sim.release.activate_release(material_arrival=True)
         return
 
+    def rationing_sequence_update(self):
+        # sort the pool
+        pool = self.sim.model_panel.POOLS.items.copy()
+        pool.sort(key=itemgetter(self.sim.release.index_material_priority))
+        # update rationing sequence for each material type
+        for material in self.materials:
+            # check for each order in the pool
+            self.material_sequence[material] = {}
+            nr_in_sequence = 1
+            for i, pool_order in enumerate(pool):
+                order = pool_order[self.index_order_object]
+                # material check
+                if material in order.requirements:
+                    self.material_sequence[material][order.identifier] = nr_in_sequence
+                    nr_in_sequence += 1
+            # entire pool established
+            self.material_sequence[material]['total_demand'] = (nr_in_sequence - 1)
+        return

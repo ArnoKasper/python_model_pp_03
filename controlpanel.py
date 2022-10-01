@@ -57,6 +57,12 @@ class ModelPanel(object):
             aimed_utilization=self.AIMED_UTILIZATION,
             mean_process_time=self.MEAN_PROCESS_TIME,
             number_of_machines=1)
+
+        # queue and pool sorting control keys
+        self.index_sorting_removal = 0
+        self.index_order_object = 1
+        self.index_priority = 2
+
         """
         process time distributions
             - 2_erlang_truncated
@@ -75,7 +81,7 @@ class ModelPanel(object):
             - no_materials: no material needs, for debugging
         """
         self.material_requirements_distribution = 'uniform'
-        self.material_quantity = 1
+        self.material_quantity = 2
         self.material_request = 'constant'
 
         self.order_attributes = {"name": "customized",
@@ -103,8 +109,7 @@ class ModelPanel(object):
         - immediate, i.e., replenishment time is zero.
         - supplier, i.e., replenishment time is non-zero
         """
-        self.DELIVERY = "supplier"
-        # self.DELIVERY = "immediate"
+        self.DELIVERY = "supplier" # "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         return
 
@@ -141,15 +146,7 @@ class PolicyPanel(object):
             - release
             - arrival 
         """
-        self.material_reordering = 'release'
-
-        """
-        material_dedication: when to dedicate materials to orders
-            - release
-            - arrival
-        """
-        # not implemented
-        self.material_dedication = 'release'
+        self.material_reordering = 'arrival'
 
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
@@ -178,8 +175,8 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        self.release_technique = "DRACO"
-        # self.release_technique = "immediate"
+        # self.release_technique = "DRACO"
+        self.release_technique = "immediate"
         # self.release_technique = "LUMS_COR"
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
@@ -187,7 +184,7 @@ class PolicyPanel(object):
         # tracking variables
         self.released = 0
         self.completed = 0
-        self.release_target = 28
+        self.release_target = 18
 
         # pool rule
         self.sequencing_rule = "PRD"
@@ -204,20 +201,26 @@ class PolicyPanel(object):
             - FOCUS, following Kasper et al. (2023)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = "FOCUS" # "FOCUS" #
+        self.dispatching_rule = "FCFS" # "FOCUS" #
 
         # material allocation
         """
         material allocation
             - availability
+            - rationing
+                - requires a rationing rule
+                    - FCFS
+                    - SPT
+                    - FOCUS
         """
         self.material_allocation = "availability"
+        self.rationing_rule = "FCFS"
         return
 
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 5, 'generated': 0, 'delivered': 0},
+    'BSS': {'reorder_point': 8, 'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {

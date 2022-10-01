@@ -8,10 +8,11 @@ class Release(object):
         :param simulation: simulation object
         """
         self.sim = simulation
-        self.index_sorting_removal = 0
-        self.index_order_object = 1
-        self.index_priority = 2
-        
+        self.index_sorting_removal = self.sim.model_panel.index_sorting_removal
+        self.index_order_object = self.sim.model_panel.index_order_object
+        self.index_priority = self.sim.model_panel.index_priority
+        self.index_material_priority = 4
+
         self.release_technique = self.sim.policy_panel.release_technique
 
         # release triggered
@@ -59,6 +60,9 @@ class Release(object):
     def put_in_pool(self, order):
         # update order priority
         self.set_pool_priority(order=order)
+        # set rationing rule
+        if self.sim.policy_panel.material_allocation == 'rationing':
+            self.set_material_priority(order=order)
         # put order in pool
         pool_item = self.pool_item(order=order)
         self.sim.model_panel.POOLS.put(pool_item)
@@ -91,12 +95,23 @@ class Release(object):
                         self.continuous_trigger(work_centre=potential_starving_work_centre)
         return
 
+    def set_material_priority(self, order):
+        if self.sim.policy_panel.rationing_rule == "FCFS":
+            order.material_priority = order.arrival_time
+        elif self.sim.policy_panel.rationing_rule == "SPT":
+            order.material_priority = list(order.process_time.values())[0]
+        elif self.sim.policy_panel.rationing_rule == "FOCUS":
+            raise Exception("rationing rule FOCUS not yet implemented")
+            order.material_priority = 0
+        else:
+            raise Exception('no valid rationing rule selected')
+
     def set_pool_priority(self, order):
         if self.sim.policy_panel.release_technique == 'immediate':
-            order.pool_priority = order.identifier
+            order.pool_priority = order.arrival_time
         else:
             if self.sim.policy_panel.sequencing_rule == "FCFS":
-                order.pool_priority = order.identifier
+                order.pool_priority = order.arrival_time
             elif self.sim.policy_panel.sequencing_rule == "SPT":
                 order.pool_priority = list(order.process_time.values())[0]
             elif self.sim.policy_panel.sequencing_rule in ["PRD", "MODCS"]:
@@ -114,7 +129,8 @@ class Release(object):
         pool_item = [1,  # removal integer
                      order,
                      order.pool_priority,
-                     order.name]
+                     order.name,
+                     order.material_priority]
         return pool_item
 
     def release_from_pool(self, release_now):
@@ -133,6 +149,9 @@ class Release(object):
         """
         find which orders have can be made as material is available, and turn the pool
         """
+        # update rationing sequence, if applicable
+        if self.sim.policy_panel.material_allocation == 'rationing':
+            self.sim.inventory.rationing_sequence_update()
         # setup params
         release_list = list()
         # if there are no items in the pool, return
@@ -145,7 +164,7 @@ class Release(object):
             # update priorities
             self.set_pool_priority(order=order)
             # check materials
-            if self.sim.inventory.material_availability_check(order=order):
+            if self.sim.inventory.material_check(order=order):
                 # allow release
                 release_list.append(pool_item)
         # if there are no items ready in the pool
