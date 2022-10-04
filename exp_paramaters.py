@@ -8,18 +8,20 @@ import numpy as np
 
 material_complexity = ['low', 'medium', 'high']
 shop_complexity = ['low', 'medium', 'high']
-index_reorder_level = 4
 WIP_target = [18, 36, 48]
 reorder_moment = ['arrival', 'release']
 release_technique = ["DRACO", "IMM"]
 
-reorder_levels = {'low': [7, 8, 9, 10],
+reorder_levels = {'low': [6, 7, 8, 9],
                   'medium': [22, 23, 25, 27],
                   'high': [22, 23, 25, 27]
                   }
+index_reorder_level = len(reorder_levels['low'])
+
+
 shop_complexity_dict = {'low': {'work_centres': 3, "routing_configuration": "PFS"},
                          'medium': {'work_centres': 5, "routing_configuration": "GFS"},
-                         'high': {'work_centres': 5, "routing_configuration": "PFS"}}
+                         'high': {'work_centres': 5, "routing_configuration": "PJS"}}
 
 material_complexity_dict = {'low': {'material_quantity': 1, "material_request": "constant"},
                              'medium': {'material_quantity': 3, "material_request": "constant"},
@@ -42,7 +44,7 @@ def get_interactions():
                     params_dict["shop_complexity_dict"] = shop_complexity_dict[s_complexity]
                     params_dict["reorder_level"] = reorder_levels[m_complexity][reorder_lvl]
                     params_dict["reorder_moment"] = reorder_mom
-                    params_dict["WIP_target"] = None
+                    params_dict["release_target"] = None
                     experimental_params_dict.append(params_dict)
     # COR
     for m_complexity in material_complexity:
@@ -59,7 +61,7 @@ def get_interactions():
                         params_dict["shop_complexity_dict"] = shop_complexity_dict[s_complexity]
                         params_dict["reorder_level"] = reorder_levels[m_complexity][reorder_lvl]
                         params_dict["reorder_moment"] = reorder_mom
-                        params_dict["WIP_target"] = T
+                        params_dict["release_target"] = T
                         experimental_params_dict.append(params_dict)
 
     print(len(experimental_params_dict))

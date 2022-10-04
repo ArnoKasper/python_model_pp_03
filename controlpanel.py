@@ -23,7 +23,7 @@ class ModelPanel(object):
                                 "shop_complexity",
                                 "reorder_level",
                                 "reorder_moment",
-                                "WIP_target"
+                                "release_target"
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -145,7 +145,7 @@ class PolicyPanel(object):
             - total_work_content
         """
         self.due_date_method: str = 'constant'
-        self.DD_constant_value: float = 38
+        self.DD_constant_value: float = 33
         self.DD_random_min_max: List[int, int] = [30, 50]
         self.DD_total_work_content_value: float = self.DD_constant_value / (
                     1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
@@ -202,7 +202,7 @@ class PolicyPanel(object):
         # tracking variables
         self.released = 0
         self.completed = 0
-        self.release_target = 18
+        self.release_target = self.params_dict['release_target']
 
         # pool rule
         self.sequencing_rule = "PRD"
