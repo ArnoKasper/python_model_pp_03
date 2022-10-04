@@ -20,7 +20,7 @@ class Generation(object):
         return
 
     def initialize_generation(self):
-        for item_type, generation in reversed(self.generation_technique.items()):
+        for item_type, generation in self.generation_technique.items():
             if generation == 'BSS':
                 # generation via control loop
                 self.sim.generation_process[item_type] = "BSS"
