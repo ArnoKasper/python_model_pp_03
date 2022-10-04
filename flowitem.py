@@ -159,8 +159,13 @@ class Order(object):
 
     def update_material_data(self):
         if len(self.materials) > 0:
-            self.material_replenishment_time = self.materials[0].material_shipping_time
-            self.inventory_time = self.materials[0].material_commitment_time - self.materials[0].material_delivery_time
+            material_replenishment_time = []
+            inventory_time = []
+            for material in self.materials:
+                material_replenishment_time.append(material.material_shipping_time)
+                inventory_time.append(material.material_commitment_time - material.material_delivery_time)
+            self.material_replenishment_time = sum(material_replenishment_time) / len(material_replenishment_time)
+            self.inventory_time = sum(inventory_time)
         else:
             self.material_replenishment_time = 0
             self.inventory_time = 0
