@@ -51,7 +51,7 @@ class Supply(object):
         material.material_delivery_time = self.sim.env.now
         material.material_shipping_time = shipping_time
         # put in inventory
-        self.sim.inventory.put_in_inventory(order=material)
+        self.sim.inventory.put_in_inventory(material=material)
         return
 
     def capacitated_delivery(self, item_type):
@@ -77,5 +77,5 @@ class Supply(object):
         material.material_delivery_time = self.sim.env.now
         material.material_shipping_time = shipping_time
         # put in inventory
-        self.sim.inventory.put_in_inventory(order=material)
+        self.sim.inventory.put_in_inventory(material=material)
         return

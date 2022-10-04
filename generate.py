@@ -25,7 +25,7 @@ class Generation(object):
                 # generation via control loop
                 self.sim.generation_process[item_type] = "BSS"
                 # assume that average is already in inventory, while the other is on its way
-                reorder_point = self.generation_attributes[item_type]['reorder_point']
+                reorder_point = self.sim.policy_panel.reorder_level
                 kick_start = int(reorder_point/2)
                 for _ in range(0, kick_start):
                     # make an order
@@ -38,20 +38,20 @@ class Generation(object):
 
     def generate_control_loop(self, item_type, warmup=False):
         if self.sim.generation_process[item_type] == 'BSS':
-            inventory_level = len(self.sim.model_panel.SKU[item_type].items)
+            on_hand_inventory = self.sim.inventory.on_hand_inventory[item_type]
             in_process = self.generation_attributes[item_type]['generated'] - self.generation_attributes[item_type]['delivered']
-            in_pipeline = in_process - inventory_level
+            in_pipeline = in_process - on_hand_inventory
             # determine how material reorder policy
-            if self.sim.policy_panel.material_reordering == "arrival":
+            if self.sim.policy_panel.reorder_moment == "arrival":
                 material_needs = self.sim.release.material_needs()
-                arrival_correction = material_needs[item_type]
-            elif self.sim.policy_panel.material_reordering == "release":
-                arrival_correction = 0
+                pool_correction = material_needs[item_type]
+            elif self.sim.policy_panel.reorder_moment == "release":
+                pool_correction = 0
             else:
                 raise Exception(f"material reorder policy unknown")
 
             # control if loop allows new generation
-            if (in_pipeline + in_process - arrival_correction) < self.generation_attributes[item_type]['reorder_point'] + 1:
+            if (in_pipeline + in_process - pool_correction) < self.sim.policy_panel.reorder_level + 1:
                 if self.sim.model_panel.DELIVERY == "supplier":
                     if not warmup:
                         # send a replenishment order ot the supplier
@@ -86,7 +86,7 @@ class Generation(object):
                             identifier=self.identifier(),
                             attributes=self.sim.model_panel.materials[item_type])
         # put material in inventory
-        self.sim.inventory.put_in_inventory(order=material)
+        self.sim.inventory.put_in_inventory(material=material)
         return
 
     def check_generation(self, item_type):

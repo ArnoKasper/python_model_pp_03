@@ -5,296 +5,62 @@ Version: 1.0.0
 """
 import numpy as np
 
-WLC_norms = [4.5, 4.9, 5.8, 6.7, 7.6, 8.5, 10]
-WIP_target = [1, 6, 12, 14, 18, 24, 36, 84]
-WIP_loop_target = [1, 2, 3, 4, 8, 10]
-POLCA_cards = [3, 4, 5, 8, 12, 5000]
-due_date_type = ["total_work_content", "constant"]
-due_date_tightness = ["tight", "loose"]
 
-dd_dict = {"loose": {"total_work_content": 12,
-                     "random": [30, 54],
-                     "constant": 42
-                     },
-           "tight": {"total_work_content": 9,
-                     "random": [28, 35],
-                     "constant": 31.5
-                     }
-           }
+material_complexity = ['low', 'medium', 'high']
+shop_complexity = ['low', 'medium', 'high']
+index_reorder_level = 4
+WIP_target = [18, 36, 48]
+reorder_moment = ['arrival', 'release']
+release_technique = ["DRACO", "IMM"]
 
+reorder_levels = {'low': [7, 8, 9, 10],
+                  'medium': [22, 23, 25, 27],
+                  'high': [22, 23, 25, 27]
+                  }
+shop_complexity_dict = {'low': {'work_centres': 3, "routing_configuration": "PFS"},
+                         'medium': {'work_centres': 5, "routing_configuration": "GFS"},
+                         'high': {'work_centres': 5, "routing_configuration": "PFS"}}
+
+material_complexity_dict = {'low': {'material_quantity': 1, "material_request": "constant"},
+                             'medium': {'material_quantity': 3, "material_request": "constant"},
+                             'high': {'material_quantity': 3, "material_request": "variable"}}
 experimental_params_dict = []
 
 
 def get_interactions():
-    """
-    # FOCUS
-    for dd_type in due_date_type:
-        for tightness in due_date_tightness:
-            params_dict = dict()
-            params_dict["name"] = "FOCUS"
-            params_dict["hierarchical_order_release"] = False
-            params_dict["hierarchical_order_authorization"] = False
-            params_dict["dispatching_mode"] = "system_state_dispatching"
-            params_dict["dispatching_rule"] = "FOCUS"
-            params_dict["ssd_order_release"] = False
-            params_dict["ssd_order_authorization"] = False
-            params_dict["release_target"] = None
-            params_dict["authorization_target"] = None
-            params_dict["dd_type"] = dd_type
-            params_dict["dd_tightness"] = tightness
-            params_dict["dd_value"] = dd_dict[tightness][dd_type]
-            experimental_params_dict.append(params_dict)
-
-    # "DRACO"
-    WIP_target = [6, 12, 14, 18, 24, 36, 84]
-    for T in WIP_target:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                target = int(T / 6)
-                params_dict = dict()
-                params_dict["name"] = "DRACO"
-                params_dict["hierarchical_order_release"] = False
-                params_dict["hierarchical_order_authorization"] = False
-                params_dict["dispatching_mode"] = "system_state_dispatching"
-                params_dict["dispatching_rule"] = "DRACO"
-                params_dict["ssd_order_release"] = True
-                params_dict["ssd_order_authorization"] = True
-                params_dict["release_target"] = T
-                params_dict["authorization_target"] = target
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # "DRACO (D)"
-    for dd_type in due_date_type:
-        for tightness in due_date_tightness:
-            params_dict = dict()
-            params_dict["name"] = "DRACO (D)"
-            params_dict["hierarchical_order_release"] = False
-            params_dict["hierarchical_order_authorization"] = False
-            params_dict["dispatching_mode"] = "system_state_dispatching"
-            params_dict["dispatching_rule"] = "DRACO"
-            params_dict["ssd_order_release"] = False
-            params_dict["ssd_order_authorization"] = False
-            params_dict["release_target"] = None
-            params_dict["authorization_target"] = None
-            params_dict["dd_type"] = dd_type
-            params_dict["dd_tightness"] = tightness
-            params_dict["dd_value"] = dd_dict[tightness][dd_type]
-            experimental_params_dict.append(params_dict)
-
-    # "DRACO (R + D)"
-    WIP_target = [1, 6, 12, 14, 18, 24, 36, 84]
-    for T in WIP_target:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "DRACO (R + D)"
-                params_dict["hierarchical_order_release"] = False
-                params_dict["hierarchical_order_authorization"] = False
-                params_dict["dispatching_mode"] = "system_state_dispatching"
-                params_dict["dispatching_rule"] = "DRACO"
-                params_dict["ssd_order_release"] = True
-                params_dict["ssd_order_authorization"] = False
-                params_dict["release_target"] = T
-                params_dict["authorization_target"] = None
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # "DRACO (A + D)"
-    for C_jk in WIP_loop_target:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "DRACO (A + D)"
-                params_dict["hierarchical_order_release"] = False
-                params_dict["hierarchical_order_authorization"] = False
-                params_dict["dispatching_mode"] = "system_state_dispatching"
-                params_dict["dispatching_rule"] = "DRACO"
-                params_dict["ssd_order_release"] = False
-                params_dict["ssd_order_authorization"] = True
-                params_dict["release_target"] = None
-                params_dict["authorization_target"] = C_jk
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # LUMS COR
-    for norm in WLC_norms:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "LUMS COR"
-                params_dict["hierarchical_order_release"] = True
-                params_dict["hierarchical_order_authorization"] = False
-                params_dict["dispatching_mode"] = "priority_rule"
-                params_dict["dispatching_rule"] = "ODD_land"
-                params_dict["ssd_order_release"] = False
-                params_dict["ssd_order_authorization"] = False
-                params_dict["release_target"] = norm
-                params_dict["authorization_target"] = None
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # POLCA
-    for cards in POLCA_cards:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "POLCA"
-                params_dict["hierarchical_order_release"] = False
-                params_dict["hierarchical_order_authorization"] = True
-                params_dict["dispatching_mode"] = "priority_rule"
-                params_dict["dispatching_rule"] = "ODD_land"
-                params_dict["ssd_order_release"] = False
-                params_dict["ssd_order_authorization"] = False
-                params_dict["release_target"] = None
-                params_dict["authorization_target"] = cards
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # LC-POLCA
-    for norm in WLC_norms:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "LC-POLCA"
-                params_dict["hierarchical_order_release"] = True
-                params_dict["hierarchical_order_authorization"] = True
-                params_dict["dispatching_mode"] = "priority_rule"
-                params_dict["dispatching_rule"] = "ODD_land"
-                params_dict["ssd_order_release"] = False
-                params_dict["ssd_order_authorization"] = False
-                params_dict["release_target"] = norm
-                params_dict["authorization_target"] = 3
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-
-    # ODD
-    for dd_type in due_date_type:
-        for tightness in due_date_tightness:
-            params_dict = dict()
-            params_dict["name"] = "ODD"
-            params_dict["hierarchical_order_release"] = False
-            params_dict["hierarchical_order_authorization"] = False
-            params_dict["dispatching_mode"] = "priority_rule"
-            params_dict["dispatching_rule"] = "ODD_land"
-            params_dict["ssd_order_release"] = False
-            params_dict["ssd_order_authorization"] = False
-            params_dict["release_target"] = None
-            params_dict["authorization_target"] = None
-            params_dict["dd_type"] = dd_type
-            params_dict["dd_tightness"] = tightness
-            params_dict["dd_value"] = dd_dict[tightness][dd_type]
-            experimental_params_dict.append(params_dict)
-
-    # LC-POLCA (with FOCUS)
-    for norm in WLC_norms:
-        for dd_type in due_date_type:
-            for tightness in due_date_tightness:
-                params_dict = dict()
-                params_dict["name"] = "LC-POLCA"
-                params_dict["hierarchical_order_release"] = True
-                params_dict["hierarchical_order_authorization"] = True
-                params_dict["dispatching_mode"] = "system_state_dispatching"
-                params_dict["dispatching_rule"] = "FOCUS"
-                params_dict["ssd_order_release"] = False
-                params_dict["ssd_order_authorization"] = False
-                params_dict["release_target"] = norm
-                params_dict["authorization_target"] = 3
-                params_dict["dd_type"] = dd_type
-                params_dict["dd_tightness"] = tightness
-                params_dict["dd_value"] = dd_dict[tightness][dd_type]
-                experimental_params_dict.append(params_dict)
-    """
-    # LUMS COR
-    for norm in WLC_norms:
-        params_dict = dict()
-        params_dict["name"] = "LUMS COR"
-        params_dict["hierarchical_order_release"] = True
-        params_dict["hierarchical_order_authorization"] = False
-        params_dict["dispatching_mode"] = "priority_rule"
-        params_dict["dispatching_rule"] = "ODD_land"
-        params_dict["ssd_order_release"] = False
-        params_dict["ssd_order_authorization"] = False
-        params_dict["release_target"] = norm
-        params_dict["authorization_target"] = None
-        params_dict["dd_type"] = "constant"
-        params_dict["dd_tightness"] = "tight"  # "loose"
-        params_dict["dd_value"] = dd_dict["tight"]["constant"]
-        experimental_params_dict.append(params_dict)
-    """
-    params_dict = dict()
-    params_dict["name"] = "IMM"
-    params_dict["hierarchical_order_release"] = False
-    params_dict["hierarchical_order_authorization"] = False
-    params_dict["dispatching_mode"] = "priority_rule"
-    params_dict["dispatching_rule"] = "FCFS"
-    params_dict["ssd_order_release"] = False
-    params_dict["ssd_order_authorization"] = False
-    params_dict["release_target"] = 4.5
-    params_dict["authorization_target"] = 3
-    params_dict["dd_type"] = "constant"
-    params_dict["dd_tightness"] = "tight" # "loose"
-    params_dict["dd_value"] = dd_dict["tight"]["constant"]
-    experimental_params_dict.append(params_dict)
-
-    params_dict = dict()
-    params_dict["name"] = "LUMS_COR"
-    params_dict["hierarchical_order_release"] = True
-    params_dict["hierarchical_order_authorization"] = False
-    params_dict["dispatching_mode"] = "priority_rule"
-    params_dict["dispatching_rule"] = "ODD_land"
-    params_dict["ssd_order_release"] = False
-    params_dict["ssd_order_authorization"] = False
-    params_dict["release_target"] = 20
-    params_dict["authorization_target"] = None
-    params_dict["dd_type"] = "constant"
-    params_dict["dd_tightness"] = "tight" # "loose"
-    params_dict["dd_value"] = dd_dict["tight"]["constant"]
-    experimental_params_dict.append(params_dict)
-
-    T = 36
-    params_dict = dict()
-    params_dict["name"] = "DRACO"
-    params_dict["hierarchical_order_release"] = False
-    params_dict["hierarchical_order_authorization"] = False
-    params_dict["dispatching_mode"] = "system_state_dispatching"
-    params_dict["dispatching_rule"] = "DRACO"
-    params_dict["ssd_order_release"] = True
-    params_dict["ssd_order_authorization"] = True
-    params_dict["release_target"] = T
-    params_dict["authorization_target"] = int(T / 6)
-    params_dict["dd_type"] = "constant"
-    params_dict["dd_tightness"] = "tight" # "loose"
-    params_dict["dd_value"] = dd_dict["tight"]["constant"]
-    experimental_params_dict.append(params_dict)
-    
-    params_dict = dict()
-    params_dict["name"] = "DRACO (D)"
-    params_dict["hierarchical_order_release"] = False
-    params_dict["hierarchical_order_authorization"] = False
-    params_dict["dispatching_mode"] = "system_state_dispatching"
-    params_dict["dispatching_rule"] = "DRACO"
-    params_dict["ssd_order_release"] = False
-    params_dict["ssd_order_authorization"] = False
-    params_dict["release_target"] = None
-    params_dict["authorization_target"] = None
-    params_dict["dd_type"] = "constant"
-    params_dict["dd_tightness"] = "loose"
-    params_dict["dd_value"] = dd_dict["loose"]["constant"]
-    experimental_params_dict.append(params_dict)
-    """
+    # MOR
+    for m_complexity in material_complexity:
+        for s_complexity in shop_complexity:
+            for reorder_lvl in range(0, index_reorder_level):
+                for reorder_mom in reorder_moment:
+                    params_dict = dict()
+                    params_dict["name"] = "MOR"
+                    params_dict["release_technique"] = "immediate"
+                    params_dict["material_complexity"] = m_complexity
+                    params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
+                    params_dict["shop_complexity"] = s_complexity
+                    params_dict["shop_complexity_dict"] = shop_complexity_dict[s_complexity]
+                    params_dict["reorder_level"] = reorder_levels[m_complexity][reorder_lvl]
+                    params_dict["reorder_moment"] = reorder_mom
+                    params_dict["WIP_target"] = None
+                    experimental_params_dict.append(params_dict)
+    # COR
+    for m_complexity in material_complexity:
+        for s_complexity in shop_complexity:
+            for reorder_lvl in range(0, index_reorder_level):
+                for reorder_mom in reorder_moment:
+                    for T in WIP_target:
+                        params_dict = dict()
+                        params_dict["name"] = "COR"
+                        params_dict["release_technique"] = "DRACO"
+                        params_dict["material_complexity"] = m_complexity
+                        params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
+                        params_dict["shop_complexity"] = s_complexity
+                        params_dict["shop_complexity_dict"] = shop_complexity_dict[s_complexity]
+                        params_dict["reorder_level"] = reorder_levels[m_complexity][reorder_lvl]
+                        params_dict["reorder_moment"] = reorder_mom
+                        params_dict["WIP_target"] = T
+                        experimental_params_dict.append(params_dict)
 
     print(len(experimental_params_dict))
     return experimental_params_dict

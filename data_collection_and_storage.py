@@ -25,7 +25,8 @@ class DataCollection(object):
                             'tardy',
                             'material_waiting_time',
                             'material_replenishment_time',
-                            'inventory_time'
+                            'inventory_time',
+                            'material_present'
                                 ]
         return
 
@@ -78,6 +79,7 @@ class DataCollection(object):
         df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
         df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
         df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
+        df[f'fill_rate'] = df_run.loc[:, "material_present"].mean()
 
         # due date
         df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
@@ -85,9 +87,18 @@ class DataCollection(object):
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
 
+        df_exp_interactions = self.add_experiment_variables()
+        df = pd.concat([df, df_exp_interactions], axis=1)
+
         # save data from the run
         if self.experiment_database is None:
             self.experiment_database = df
         else:
             self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
         return
+
+    def add_experiment_variables(self):
+        df_exp_interaction = pd.DataFrame()
+        for i, index in enumerate(self.sim.model_panel.names_variables):
+            df_exp_interaction[f"{self.sim.model_panel.names_variables[i]}"] = [self.sim.model_panel.params_dict[index]]
+        return df_exp_interaction

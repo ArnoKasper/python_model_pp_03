@@ -18,21 +18,21 @@ class Order(object):
         self.materials = []
 
         # copy the material list
-        requirements = self.sim.model_panel.material_types.copy()
+        material_types = self.sim.model_panel.material_types.copy()
         # settings check
-        if len(requirements) < self.sim.model_panel.material_quantity:
+        if len(material_types) < self.sim.model_panel.material_quantity:
             raise Exception("higher quantity requested than possible")
 
         if self.sim.model_panel.material_request == "constant":
-            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=requirements,
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
                                                                                  size=self.sim.model_panel.material_quantity,
                                                                                  replace=False
                                                                                  )
         elif self.sim.model_panel.material_request == "variable":
-            nr_materials = self.sim.NP_random_generator['inventory'].choice(a=self.sim.model_panel.material_quantity,
+            nr_materials = self.sim.NP_random_generator['inventory'].choice(a=np.array(self.sim.model_panel.material_quantity_range),
                                                                             size=1,
                                                                             replace=False) + 1
-            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=requirements,
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
                                                                                  size=nr_materials,
                                                                                  replace=False)
         elif self.sim.model_panel.material_request == "no_materials":
@@ -79,6 +79,7 @@ class Order(object):
         self.process_time_release = {}
         self.process_time_cumulative = 0
         self.remaining_process_time = 0
+        self.material_present = self.material_present()
 
         # dispatching priority
         self.dispatching_priority = {}
@@ -149,6 +150,12 @@ class Order(object):
         if self.sim.policy_panel.dispatching_rule == "ODD_land":
             self.ODDs = {}
         return
+
+    def material_present(self):
+        if self.sim.inventory.material_check(order=self, fill_rate_check=True):
+            return 1
+        else:
+            return 0
 
     def update_material_data(self):
         if len(self.materials) > 0:

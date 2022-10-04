@@ -27,6 +27,9 @@ class Demand(object):
             # create an order object and give it a name
             order = Order(simulation=self.sim, identifier=i)
             self.sim.data.order_input_counter += 1
+            # add the order from the order book, if necessary
+            if self.sim.policy_panel.release_technique == "DRACO" or self.sim.policy_panel.dispatching_rule == "FOCUS":
+                self.sim.system_state_dispatching.input_order_book(order=order)
             # release control
             self.sim.release.put_in_pool(order=order)
             # next inter arrival time

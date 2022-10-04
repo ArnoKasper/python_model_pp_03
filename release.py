@@ -100,14 +100,15 @@ class Release(object):
             order.material_priority = order.arrival_time
         elif self.sim.policy_panel.rationing_rule == "SPT":
             order.material_priority = list(order.process_time.values())[0]
-        elif self.sim.policy_panel.rationing_rule == "FOCUS":
-            raise Exception("rationing rule FOCUS not yet implemented")
-            order.material_priority = 0
+        elif self.sim.policy_panel.sequencing_rule == "EDD":
+            order.material_priority = order.due_date
+        elif self.sim.policy_panel.rationing_rule == "SLACK":
+            order.material_priority = order.due_date - self.sim.env.now - order.remaining_process_time
         else:
             raise Exception('no valid rationing rule selected')
 
     def set_pool_priority(self, order):
-        if self.sim.policy_panel.release_technique == 'immediate':
+        if self.sim.policy_panel.release_technique in ['immediate', "DRACO"]:
             order.pool_priority = order.arrival_time
         else:
             if self.sim.policy_panel.sequencing_rule == "FCFS":

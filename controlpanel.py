@@ -1,6 +1,7 @@
 from typing import Dict, List, ClassVar
 from generalfunctions import GeneralFunctions
 from capacity_sources import Machine, Queue, Pool, Inventory
+import exp_paramaters as parameters
 
 
 class ModelPanel(object):
@@ -9,11 +10,25 @@ class ModelPanel(object):
         self.sim: ClassVar = simulation
         self.print_info: bool = True
         self.print_results: bool = True
+        experimental_params_dict = parameters.get_interactions()
+        self.params_dict: Dict[...] = experimental_params_dict[self.experiment_number]
         self.general_functions: GeneralFunctions = GeneralFunctions(simulation=self.sim)
 
         # project names
-        self.project_name: str = "InnsbrückProject"
+        self.project_name: str = "Innsbruck"
         self.experiment_name: str = self.project_name + "_"
+        self.names_variables = ["name",
+                                'release_technique',
+                                "material_complexity",
+                                "shop_complexity",
+                                "reorder_level",
+                                "reorder_moment",
+                                "WIP_target"
+                                ]
+        self.indexes = self.names_variables.copy()
+        self.experiment_name: str = f'{self.project_name}_'
+        for i in self.indexes:
+            self.experiment_name += str(self.params_dict[i]) + "_"
 
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
@@ -21,8 +36,10 @@ class ModelPanel(object):
         self.NUMBER_OF_RUNS: int = 100  # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": 6,
-                                'routing_configuration': 'PJS'}
+        self.SHOP_ATTRIBUTES = {"work_centres": self.params_dict["shop_complexity_dict"]["work_centres"],
+                                'routing_configuration': self.params_dict["shop_complexity_dict"][
+                                    "routing_configuration"]
+                                }
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
         # make pool
@@ -66,10 +83,11 @@ class ModelPanel(object):
         """
         process time distributions
             - 2_erlang_truncated
+            - 2_erlang
             - exponential
             - uniform
         """
-        self.PROCESS_TIME_DISTRIBUTION = '2_erlang_truncated' # 'exponential' # '2_erlang' #
+        self.PROCESS_TIME_DISTRIBUTION = '2_erlang'
 
         # orders
         """
@@ -80,9 +98,11 @@ class ModelPanel(object):
             - variable: each order request a variable number of items
             - no_materials: no material needs, for debugging
         """
+        self.material_types = ['A', 'B', 'C', 'D', 'E']
         self.material_requirements_distribution = 'uniform'
-        self.material_quantity = 2
-        self.material_request = 'constant'
+        self.material_quantity = self.params_dict["material_complexity_dict"]["material_quantity"]
+        self.material_quantity_range = [0, len(self.material_types) - 1]
+        self.material_request = self.params_dict["material_complexity_dict"]["material_request"]
 
         self.order_attributes = {"name": "customized",
                                  "order_type": 'customized',
@@ -92,10 +112,8 @@ class ModelPanel(object):
 
         # materials
         self.SKU: Dict[...] = {}
-        self.material_types = ['A', 'B', 'C', 'D', 'E', "F"]
-        # self.material_types = ['A']
         self.materials = {}
-        self.expected_replenishment_time = 5
+        self.expected_replenishment_time = 10
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
@@ -109,7 +127,7 @@ class ModelPanel(object):
         - immediate, i.e., replenishment time is zero.
         - supplier, i.e., replenishment time is non-zero
         """
-        self.DELIVERY = "supplier" # "immediate"
+        self.DELIVERY = "supplier"  # "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         return
 
@@ -118,7 +136,7 @@ class PolicyPanel(object):
     def __init__(self, experiment_number: int, simulation) -> None:
         self.sim = simulation
         self.experiment_number: int = experiment_number
-
+        self.params_dict: Dict[...] = parameters.experimental_params_dict[self.experiment_number]
         # due date determination
         """
         due date procedure
@@ -127,26 +145,28 @@ class PolicyPanel(object):
             - total_work_content
         """
         self.due_date_method: str = 'constant'
-        self.DD_constant_value: float = 42
-        self.DD_random_min_max: List[int, int] = [30, 52]
-        self.DD_total_work_content_value: float = 10
+        self.DD_constant_value: float = 38
+        self.DD_random_min_max: List[int, int] = [30, 50]
+        self.DD_total_work_content_value: float = self.DD_constant_value / (
+                    1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
 
         # generation
         """
         types of generation techniques
             - BSS (base-stock system)
         """
+        self.reorder_level = self.params_dict['reorder_level']
         self.generated = {}
         self.delivered = {}
         self.generation_technique = {}
         self.generation_attributes = {}
         """
                     
-        material_reordering: when to send a replenishment order
+        reorder_moment: when to send a replenishment order
             - release
             - arrival 
         """
-        self.material_reordering = 'arrival'
+        self.reorder_moment = self.params_dict['reorder_moment']
 
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
@@ -175,9 +195,7 @@ class PolicyPanel(object):
             - SPT
         """
         # release technique
-        # self.release_technique = "DRACO"
-        self.release_technique = "immediate"
-        # self.release_technique = "LUMS_COR"
+        self.release_technique = self.params_dict['release_technique'] # "DRACO" # "immediate" #
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 
@@ -201,7 +219,7 @@ class PolicyPanel(object):
             - FOCUS, following Kasper et al. (2023)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = "FCFS" # "FOCUS" #
+        self.dispatching_rule = "FOCUS"  # "FCFS" #
 
         # material allocation
         """
@@ -211,16 +229,17 @@ class PolicyPanel(object):
                 - requires a rationing rule
                     - FCFS
                     - SPT
-                    - FOCUS
+                    - EDD
+                    - SLACK
         """
         self.material_allocation = "availability"
-        self.rationing_rule = "FCFS"
+        self.rationing_rule = "SLACK"
         return
 
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'reorder_point': 8, 'generated': 0, 'delivered': 0},
+    'BSS': {'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {

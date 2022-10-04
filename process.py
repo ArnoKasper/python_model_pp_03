@@ -33,6 +33,7 @@ class Process(object):
             order.release_time = self.sim.env.now
             order.pool_time = order.release_time - order.arrival_time
             order.first_entry = False
+            order.release = True
             order.location = "system"
             if self.dispatching_rule == "ODD_land":
                 self.sim.general_functions.ODD_land_adaption(order=order)
@@ -230,6 +231,9 @@ class Process(object):
             self.sim.release.update_release(order=order,
                                             work_centre=work_centre,
                                             completed=True)
+            # remove the order from the order book, if necessary
+            if self.sim.policy_panel.release_technique == "DRACO" or self.dispatching_rule == "FOCUS":
+                self.sim.system_state_dispatching.output_order_book(order=order)
         else:
             # activate new release
             self.put_in_queue(order=order)
@@ -274,6 +278,7 @@ class Process(object):
         df_list.append(order.material_available_time - order.arrival_time)
         df_list.append(order.material_replenishment_time)
         df_list.append(order.inventory_time)
+        df_list.append(order.material_present)
 
         # save list
         self.sim.data.append_run_list(result_list=df_list)

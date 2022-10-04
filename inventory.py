@@ -12,39 +12,46 @@ class Inventory(object):
         self.index_order_object = self.sim.model_panel.index_order_object
         self.index_priority = self.sim.model_panel.index_priority
         self.materials = self.sim.model_panel.materials
+        self.material_allocation = self.sim.policy_panel.material_allocation
         self.material_sequence = {}
+
+        self.on_hand_inventory = {}
+        for material in self.materials:
+            self.on_hand_inventory[material] = 0
         return
 
-    def put_in_inventory(self, order):
-        inventory_item = self.inventory_item(order=order)
-        self.sim.model_panel.SKU[order.type].put(inventory_item)
+    def put_in_inventory(self, material):
+        inventory_item = self.inventory_item(material=material)
+        self.sim.model_panel.SKU[material.type].put(inventory_item)
+        self.on_hand_inventory[material.type] += 1
         # update state
-        order.in_inventory = True
+        material.in_inventory = True
         # update as material has arrived
         self.inventory_update_release()
         return
 
     @staticmethod
-    def inventory_item(order):
+    def inventory_item(material):
         inventory_item = [1,  # removal integer
-                          order,
-                          order.material_delivery_time,
-                          order.name
+                          material,
+                          material.material_delivery_time,
+                          material.name
                           ]
         return inventory_item
 
-    def remove_from_inventory(self, item):
+    def remove_from_inventory(self, material):
         """
         removes an order from the queue
         :param work_center: work_center number indicating the number of the capacity source
         :return: void
         """
         # sort the stock keeping unit
-        self.sim.model_panel.SKU[item].items.sort(key=itemgetter(self.index_sorting_removal))
-        self.sim.model_panel.SKU[item].get()
+        self.sim.model_panel.SKU[material].items.sort(key=itemgetter(self.index_sorting_removal))
+        self.sim.model_panel.SKU[material].get()
+        self.on_hand_inventory[material] -= 1
 
         # update generation process
-        self.sim.generation.check_generation(item_type=item)
+        self.sim.generation.check_generation(item_type=material)
         return
 
     def collect_materials(self, requirements):
@@ -66,17 +73,17 @@ class Inventory(object):
         self.sim.model_panel.SKU[item].items.sort(key=itemgetter(self.index_sorting_removal))
         item_list = self.sim.model_panel.SKU[item].items[0]
         item_list[self.index_sorting_removal] = 0
-        self.remove_from_inventory(item=item)
+        self.remove_from_inventory(material=item)
         material = item_list[self.index_order_object]
         return material
 
-    def inventory_availability_check(self, item, amount=1):
-        if len(self.sim.model_panel.SKU[item].items) >= amount:
+    def inventory_availability_check(self, material, amount):
+        if self.on_hand_inventory[material] >= amount:
             return True
         else:
             return False
 
-    def material_check(self, order):
+    def material_check(self, order, fill_rate_check=False):
         """
         check of the materials are available
         :param requirements: list with the name of the materials that need to be collected
@@ -86,27 +93,30 @@ class Inventory(object):
         requirements = order.requirements
         if not len(requirements) == 0:
             # control inventories for the required item
-            availability_dict = {}
+            availability = []
             # check availability for each item
-            for item in requirements:
+            for material in requirements:
                 # allocate material based on allocation policy
-                if self.sim.policy_panel.material_allocation == 'rationing':
-                    inventory_level = self.material_sequence[item][order.identifier]
-                elif self.sim.policy_panel.material_allocation == 'availability':
+                if self.material_allocation == 'rationing' and not fill_rate_check:
+                    inventory_level = self.material_sequence[material][order.identifier]
+                elif self.material_allocation == 'availability':
+                    inventory_level = 1
+                elif fill_rate_check:
                     inventory_level = 1
                 else:
                     raise Exception(
                         f'unknown material allocation policy {self.sim.policy_panel.material_allocation_rule}')
 
                 # check materials
-                if self.inventory_availability_check(item=item, amount=inventory_level):
-                    # inventory available, pick component
-                    availability_dict[item] = True
+                if self.inventory_availability_check(material=material, amount=inventory_level):
+                    # inventory available, indicate with 1
+                    availability.append(1)
                 else:
-                    availability_dict[item] = False
+                    # inventory not available, indicate with 0
+                    availability.append(0)
 
             # control if all the orders material requirements are satisfied
-            if all(available == True for available in availability_dict.values()):
+            if sum(availability) == len(availability):
                 # collect data, check if this is the first time when the materials are available
                 if not order.material_available:
                     order.material_available_time = self.sim.env.now

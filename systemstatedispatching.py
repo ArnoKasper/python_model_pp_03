@@ -14,8 +14,8 @@ class SystemStateDispatching(object):
         self.index_priority = 2
 
         """ system-state variables """
-        # inventory
-        self.activate_inventory = True
+        self.last_update_system_state_variables = -1
+        self.order_book = {}
 
         # release
         self.activate_release_WIP_target = True
@@ -32,7 +32,6 @@ class SystemStateDispatching(object):
         self.A_dict = dict()
         self.S_list = list()
         self.V_list = list()
-        self.P_j = list()
 
         self.p_ij_min = 0
         self.p_ij_mean = 0
@@ -45,7 +44,7 @@ class SystemStateDispatching(object):
         self.slack_opn_max = np.inf
 
         self.function_names = ["pi", "xi", "tau", "delta"]
-        self.weights = [1] * len(self.function_names)
+        self.weights = [1, 0, 1, 0]
         self.functions_activated = dict()
         for i, name in enumerate(self.function_names):
             self.functions_activated[name] = self.weights[i]
@@ -56,18 +55,13 @@ class SystemStateDispatching(object):
         """
         assumes the use of IMM as release procedure
         """
-        # remove impact values previous decision
-        self.max_impact_list = [0] * len(self.weights)
         # update state variables
         self.update_system_state_variables(work_centre=work_centre)
         # get impact of each order in queue
         for i, order_item in enumerate(queue_list):
-            projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
+            projected_impact = self.D(order=order_item[self.index_order_object], work_centre=work_centre)
             # attach impact to the order
-            order_item[self.index_priority] = sum(projected_impact_list)
-            # find highest impact for this selection moment
-            if sum(projected_impact_list) > sum(self.max_impact_list):
-                self.max_impact_list = projected_impact_list
+            order_item[self.index_priority] = projected_impact
             # - 1 because simulation model minimizes
             order_item[self.index_priority] = order_item[self.index_priority] * -1
         return queue_list
@@ -140,12 +134,9 @@ class SystemStateDispatching(object):
         dispatching_options = pool_list + queue_list  # first queue, then pool
         # loop over all orders
         for i, order_item in enumerate(dispatching_options):
-            projected_impact_list = self._get_weighted_impact(order_item=order_item, work_centre=work_centre)
+            projected_impact = self.DRACO(order_item=order_item, work_centre=work_centre)
             # attach impact to the order
-            order_item[self.index_priority] = sum(projected_impact_list)
-            # find highest impact for this selection moment
-            if sum(projected_impact_list) > sum(self.max_impact_list):
-                self.max_impact_list = projected_impact_list
+            order_item[self.index_priority] = projected_impact
             # - 1 because simulation model minimizes
             order_item[self.index_priority] = order_item[self.index_priority] * -1
 
@@ -170,6 +161,7 @@ class SystemStateDispatching(object):
             order_selected.release_time = self.sim.env.now
             order_selected.pool_time = order_selected.release_time - order_selected.arrival_time
             order_selected.first_entry = False
+            order_selected.release = True
             order_selected.location = "system"
             # put the order in the queue
             queue_item = self.sim.process.queue_item(order=order_selected, work_centre=work_centre)
@@ -184,11 +176,37 @@ class SystemStateDispatching(object):
         else:
             raise Exception('DRACO, no valid triggering condition identified')
 
-    def _get_weighted_impact(self, order_item, work_centre):
-        order = order_item[self.index_order_object]
+    def R(self, released):
+        """
+        DRACO release element
+        """
+        release_impact = []
+        # workload target
+        if self.activate_release_WIP_target:
+            rho = 0
+            # release (order in pool)
+            if not released:
+                # more orders in the system than cap
+                if self.WIP < (2 * self.WIP_target):
+                    rho = 1 - (self.WIP / (2 * self.WIP_target))
+                else:
+                    rho = 0
+            # release (order in queue)
+            if released:
+                # more load in the system than target
+                if self.WIP < (2 * self.WIP_target):
+                    rho = (self.WIP / (2 * self.WIP_target))
+                else:
+                    rho = 1
+            release_impact.append(rho)
+        return sum([j * 1 / len(release_impact) for j in release_impact])
+
+    def D(self, order, work_centre):
+        """
+        FOCUS dispatching element
+        """
         # params
         process_time = order.process_time[work_centre]
-        process_times = order.process_time.copy()
         routing_list = order.routing_sequence.copy()
         slack = self.slack(
             d_i=order.due_date,
@@ -203,44 +221,6 @@ class SystemStateDispatching(object):
             sum_p_ij=order.remaining_process_time
         )
 
-        # get projected impact values
-        impact_list = []
-        """
-        supply element
-        """
-        stock_level = 10 + 1
-        inventory_impact = []
-        if self.activate_inventory:
-            sigma = 0
-
-        inventory_impact = sum([j * 1 / len(inventory_impact) for j in inventory_impact])
-        """
-        release element
-        """
-        release_impact = []
-        # workload target
-        if self.activate_release_WIP_target:
-            rho = 0
-            # release (order in pool)
-            if order.first_entry:
-                # more orders in the system than cap
-                if self.WIP < (2*self.WIP_target):
-                    rho = 1 - (self.WIP / (2*self.WIP_target))
-                else:
-                    rho = 0
-            # release (order in queue)
-            if not order.first_entry:
-                # more load in the system than target
-                if self.WIP < (2*self.WIP_target):
-                    rho = (self.WIP / (2*self.WIP_target))
-                else:
-                    rho = 1
-            release_impact.append(rho)
-        release_impact = sum([j * 1/len(release_impact) for j in release_impact])
-
-        """
-        dispatching element
-        """
         dispatching_impact = []
         # obtain pi
         if self.functions_activated["pi"] > 0:
@@ -272,14 +252,29 @@ class SystemStateDispatching(object):
             else:
                 delta_slack_per_operation_impact = 1
             dispatching_impact.append(delta_slack_per_operation_impact)
+        return sum([j * 1 / len(dispatching_impact) for j in dispatching_impact])
 
-        dispatching_impact = sum([j * 1/len(dispatching_impact) for j in dispatching_impact])
+    def DRACO(self, order_item, work_centre):
+        order = order_item[self.index_order_object]
 
+        # get projected impact values
+        """
+        release element
+        """
+        release_impact = self.R(released=order.release)
+        """
+        dispatching element
+        """
+        dispatching_impact = self.D(order=order, work_centre=work_centre)
         # aggregate all impact functions into list
-        projected_impact = [dispatching_impact * 1/2, release_impact * 1/2]
+        projected_impact = sum([dispatching_impact * 1 / 2, release_impact * 1 / 2])
         return projected_impact
 
     def update_system_state_variables(self, work_centre):
+        """ check if update is needed """
+        if self.last_update_system_state_variables == self.sim.env.now:
+            return
+        self.last_update_system_state_variables = self.sim.env.now
         """ set system-state variables """
         # dispatching
         self.T_list = list()
@@ -288,54 +283,16 @@ class SystemStateDispatching(object):
         self.V_list = list()
 
         """ update all state variables """
-        for i, pool_order in enumerate(self.sim.model_panel.POOLS.items):
-            processing_order = pool_order[self.index_order_object]
-            # pick remaining process time
-            process_times = []
-            for k, operation in enumerate(processing_order.routing_sequence):
-                process_times.append(processing_order.process_time[operation])
-            # order params
-            slack, slack_opn = self.get_dispatching_variables(order=processing_order)
-            self.append_system_state_variables(
-                process_times=process_times,
-                slack=slack,
-                slack_opn=slack_opn
-            )
-
-        # get state information from orders currently in process
         self.WIP = 0
-        for j, WC in enumerate(self.work_centre_layout):
-            # processing order
-            if len(self.sim.model_panel.WORK_CENTRES[WC].users) == 1:
+        for id, order in self.order_book.items():
+            # control if the order is released
+            if order.release:
                 self.WIP += 1
-                processing_order = self.sim.model_panel.WORK_CENTRES[WC].users[0].self
-                # pick remaining process time
-                process_times = []
-                for k, operation in enumerate(processing_order.routing_sequence):
-                    process_times.append(processing_order.process_time[operation])
-                # order params
-                slack, slack_opn = self.get_dispatching_variables(order=processing_order)
-                self.append_system_state_variables(
-                    process_times=process_times,
-                    slack=slack,
-                    slack_opn=slack_opn
-                )
-
-            # get state information from orders currently in queues
-            for i, queueing_order in enumerate(self.sim.model_panel.QUEUES[WC].items):
-                self.WIP += 1
-                processing_order = queueing_order[self.index_order_object]
-                # pick remaining process time
-                process_times = []
-                for k, operation in enumerate(processing_order.routing_sequence):
-                    process_times.append(processing_order.process_time[operation])
-                # order params
-                slack, slack_opn = self.get_dispatching_variables(order=processing_order)
-                self.append_system_state_variables(
-                    process_times=process_times,
-                    slack=slack,
-                    slack_opn=slack_opn
-                )
+            # get dispatching variables
+            remaining_process_times, slack, slack_opn = self.get_dispatching_variables(order=order)
+            self.append_system_state_variables(process_times=remaining_process_times,
+                                               slack=slack,
+                                               slack_opn=slack_opn)
 
         """ 
         update system state params 
@@ -390,6 +347,9 @@ class SystemStateDispatching(object):
         return
 
     def get_dispatching_variables(self, order):
+        # remaining_process_times
+        remaining_process_times = self.remaining_process_times(routing_sequence=order.routing_sequence,
+                                                               process_times=order.process_time)
         # slack
         slack = self.slack(d_i=order.due_date,
                            t=self.sim.env.now,
@@ -401,7 +361,7 @@ class SystemStateDispatching(object):
                                k=len(order.routing_sequence),
                                sum_p_ij=order.remaining_process_time
                                )
-        return slack, slack_opn
+        return remaining_process_times, slack, slack_opn
 
     @staticmethod
     def xi_idleness_impact(order, process_time, upstream_starvation_dict):
@@ -415,6 +375,13 @@ class SystemStateDispatching(object):
                 return 0
         else:
             return 0
+
+    @staticmethod
+    def remaining_process_times(routing_sequence, process_times):
+        remaining_process_times = []
+        for k, operation in enumerate(routing_sequence):
+            remaining_process_times.append(process_times[operation])
+        return remaining_process_times
 
     @staticmethod
     def slack(d_i, t, k, sum_p_ij):
@@ -434,6 +401,13 @@ class SystemStateDispatching(object):
                 return_list.append(order_list)
         return return_list
 
+    def input_order_book(self, order):
+        self.order_book[order.identifier] = order
+        return
+
+    def output_order_book(self, order):
+        del self.order_book[order.identifier]
+        return
+
     def __str__(self):
         return "DRACO"
-
