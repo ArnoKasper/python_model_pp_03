@@ -22,6 +22,7 @@ class ModelPanel(object):
                                 "material_complexity",
                                 "shop_complexity",
                                 "reorder_level",
+                               "lead_time_level",
                                 "reorder_moment",
                                 "release_target"
                                 ]
@@ -31,9 +32,9 @@ class ModelPanel(object):
             self.experiment_name += str(self.params_dict[i]) + "_"
 
         # simulation parameters
-        self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
-        self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 100  # number of replications
+        self.WARM_UP_PERIOD: int = 30#00  # warm-up period simulation model
+        self.RUN_TIME: int = 100#00  # run time simulation model
+        self.NUMBER_OF_RUNS: int = 1#00  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": self.params_dict["shop_complexity_dict"]["work_centres"],
@@ -145,7 +146,7 @@ class PolicyPanel(object):
             - total_work_content
         """
         self.due_date_method: str = 'constant'
-        self.DD_constant_value: float = 33
+        self.DD_constant_value: float = self.params_dict["lead_time_level"]
         self.DD_random_min_max: List[int, int] = [30, 50]
         self.DD_total_work_content_value: float = self.DD_constant_value / (
                     1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
@@ -231,9 +232,10 @@ class PolicyPanel(object):
                     - SPT
                     - EDD
                     - SLACK
+                    - PMCT
         """
-        self.material_allocation = "availability"
-        self.rationing_rule = "SLACK"
+        self.material_allocation = self.params_dict['material_allocation']
+        self.rationing_rule = "PMCT"
         return
 
 

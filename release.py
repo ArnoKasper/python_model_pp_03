@@ -104,6 +104,10 @@ class Release(object):
             order.material_priority = order.due_date
         elif self.sim.policy_panel.rationing_rule == "SLACK":
             order.material_priority = order.due_date - self.sim.env.now - order.remaining_process_time
+        elif self.sim.policy_panel.rationing_rule == "PMCT":
+            q = len(order.requirements)
+            r = len(order.routing_sequence)
+            order.material_priority = order.arrival_time + (q/(q + r)) * (order.due_date - order.arrival_time)
         else:
             raise Exception('no valid rationing rule selected')
 

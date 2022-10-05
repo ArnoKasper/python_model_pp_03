@@ -22,18 +22,15 @@ class GeneralFunctions(object):
         :return: inter arrival time
         """
         mean_amount_work_centres = 0
-        if wc_and_flow_config == "GFS" or wc_and_flow_config == "PJS":
+        if wc_and_flow_config in ["GFS", "PJS", "PJSR"]:
             mean_amount_work_centres = (len(manufacturing_floor_layout) + 1) / 2
-
         elif wc_and_flow_config == "PFS":
             mean_amount_work_centres = len(manufacturing_floor_layout)
-
         # calculate the mean inter-arrival time
         # (mean amount of machines / amount of machines / utilization * 1 / amount of machines)
         inter_arrival_time = mean_amount_work_centres / len(manufacturing_floor_layout) * \
                              1 / aimed_utilization * \
                              mean_process_time / number_of_machines
-
         # round the float to five digits accuracy
         inter_arrival_time = round(inter_arrival_time, 5)
         return inter_arrival_time

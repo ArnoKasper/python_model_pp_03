@@ -35,6 +35,13 @@ class Order(object):
             self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
                                                                                  size=nr_materials,
                                                                                  replace=False)
+        elif self.sim.model_panel.material_request == "variable_replace":
+            nr_materials = self.sim.NP_random_generator['inventory'].choice(a=np.array(self.sim.model_panel.material_quantity_range),
+                                                                            size=1,
+                                                                            replace=False) + 1
+            self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
+                                                                                 size=nr_materials,
+                                                                                 replace=True)
         elif self.sim.model_panel.material_request == "no_materials":
             self.requirements = []
         else:
@@ -68,6 +75,11 @@ class Order(object):
                 self.routing_sequence.sort()  # GFS or PFS require sorted list of stations
         elif self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] == "PFS":
             self.routing_sequence = self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT.copy()
+        elif self.sim.model_panel.SHOP_ATTRIBUTES['routing_configuration'] == "PJSR":
+            self.routing_sequence = self.sim.random_generator.choices(
+                population=self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT,
+                k=self.sim.random_generator.randint(1, len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
+            )
         else:
             raise Exception("no valid manufacturing process selected")
 

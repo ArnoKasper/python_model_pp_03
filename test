@@ -14,6 +14,7 @@ TO DO
 - implement proxy of fill-rate
 
 
-results of experiment InnsbrückProject_:
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_avail_t  mean_mat_reple_t  mean_mat_inv_t  fill_rate  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy
-   1    90.647587 14.133075  0.182538  13.950537          0.182538         10.255223       21.135831   0.955034     -23.866925         0.32077               23.307599          0.014287 ['14.1331', 'nan', 'nan', 'nan']
+Simulation starts with experiment: Innsbruck_MOR_immediate_low_low_22_arrival_None_33_
+Mean time between arrival: 0.66667
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_avail_t  mean_mat_reple_t  mean_mat_inv_t  fill_rate  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy name release_technique material_complexity shop_complexity  reorder_level reorder_moment release_target  lead_time_level
+   1    90.026846 16.059564  1.479752  14.579811          1.479752          9.909708       17.293415   0.645333     -16.940436        0.804452              102.896938          0.031533  MOR         immediate                 low             low             22        arrival           None               33 ['16.0596', 'nan', 'nan', 'nan']

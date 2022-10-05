@@ -100,7 +100,11 @@ class Inventory(object):
                 if self.material_allocation == 'rationing' and not fill_rate_check:
                     inventory_level = self.material_sequence[material][order.identifier]
                 elif self.material_allocation == 'availability':
-                    inventory_level = 1
+                    if self.sim.model_panel.material_request == 'variable_replace':
+                        # correct for lumpiness in demand
+                        inventory_level = len([om for om in order.requirements if om == material])
+                    else:
+                        inventory_level = 1
                 elif fill_rate_check:
                     inventory_level = 1
                 else:
@@ -118,7 +122,7 @@ class Inventory(object):
             # control if all the orders material requirements are satisfied
             if sum(availability) == len(availability):
                 # collect data, check if this is the first time when the materials are available
-                if not order.material_available:
+                if not order.material_available and not fill_rate_check:
                     order.material_available_time = self.sim.env.now
                 return True
             else:
@@ -126,7 +130,7 @@ class Inventory(object):
                 return False
         else:
             # collect data
-            if not order.material_available:
+            if not order.material_available and not fill_rate_check:
                 order.material_available_time = self.sim.env.now
             return True
 
@@ -145,13 +149,19 @@ class Inventory(object):
         for material in self.materials:
             # check for each order in the pool
             self.material_sequence[material] = {}
-            nr_in_sequence = 1
+            nr_in_sequence = 0
             for i, pool_order in enumerate(pool):
                 order = pool_order[self.index_order_object]
                 # material check
                 if material in order.requirements:
+                    # check material quantity
+                    if self.sim.model_panel.material_request == 'variable_replace':
+                        # correct for lumpiness in demand
+                        nr_in_sequence += len([om for om in order.requirements if om == material])
+                    else:
+                        nr_in_sequence += 1
+                    # save sequence position
                     self.material_sequence[material][order.identifier] = nr_in_sequence
-                    nr_in_sequence += 1
             # entire pool established
-            self.material_sequence[material]['total_demand'] = (nr_in_sequence - 1)
+            self.material_sequence[material]['total_demand'] = nr_in_sequence
         return
