@@ -145,7 +145,7 @@ class Inventory(object):
         # sort the pool
         pool = self.sim.model_panel.POOLS.items.copy()
         pool.sort(key=itemgetter(self.sim.release.index_material_priority))
-        # update rationing sequence for each material type
+        # update rationing sequence for each material type k
         for material in self.materials:
             # check for each order in the pool
             self.material_sequence[material] = {}

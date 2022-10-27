@@ -76,6 +76,8 @@ class Process(object):
             order.dispatching_priority[work_centre] = self.sim.env.now
         elif self.dispatching_rule == "FISFO":
             order.dispatching_priority[work_centre] = order.arrival_time
+        elif self.dispatching_rule == 'EDD':
+            order.dispatching_priority[work_centre] = order.due_date
         elif self.dispatching_rule == "SPT":
             order.dispatching_priority[work_centre] = order.process_time[work_centre]
         elif self.dispatching_rule == "SLACK":
@@ -279,6 +281,8 @@ class Process(object):
         df_list.append(order.material_replenishment_time)
         df_list.append(order.inventory_time)
         df_list.append(order.material_present)
+        df_list.append(len(order.routing_sequence_data))
+        df_list.append(len(order.requirements))
 
         # save list
         self.sim.data.append_run_list(result_list=df_list)

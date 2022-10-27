@@ -8,13 +8,18 @@ check:
 - isolated DRACO: validated
 - immediate supply and material supply equal: VALIDATED
 
-TO DO
-- make FOCUS code faster
-- make FOCUS for rationing policy
-- implement proxy of fill-rate
 
 
-Simulation starts with experiment: Innsbruck_MOR_immediate_low_low_22_arrival_None_33_
-Mean time between arrival: 0.66667
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_avail_t  mean_mat_reple_t  mean_mat_inv_t  fill_rate  mean_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy name release_technique material_complexity shop_complexity  reorder_level reorder_moment release_target  lead_time_level
-   1    90.026846 16.059564  1.479752  14.579811          1.479752          9.909708       17.293415   0.645333     -16.940436        0.804452              102.896938          0.031533  MOR         immediate                 low             low             22        arrival           None               33 ['16.0596', 'nan', 'nan', 'nan']
+
+results of experiment Innsbruck_IMM_immediate_EDD_low_low_23_42_arrival_20_: (RANDOM)
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
+ 3.0    90.282146 22.761728  0.808803  21.952924       19.447007   0.722766     -19.255197     17.177317        1.708391               37.454813          0.137562           23.0             42.0            20.0
+
+results of experiment Innsbruck_CONWIP_CONWIP_EDD_low_low_23_42_arrival_40_:  (RANDOM)
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
+ 3.0    90.302871 24.847874  4.793959  20.053915       23.248263   0.806631      -17.16875     17.249468        1.982932               39.493769          0.171853           23.0             42.0            40.0
+
+results of experiment Innsbruck_DRACO_DRACO_EDD_low_low_23_42_arrival_20_: (RANDOM)
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
+ 3.0    90.280549 22.809017 10.143319  12.665697       28.432866    0.95242     -19.206772     14.340521        0.873724                 21.3592          0.085197           23.0             42.0            20.0
+

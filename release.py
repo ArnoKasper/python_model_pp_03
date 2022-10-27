@@ -96,15 +96,11 @@ class Release(object):
         return
 
     def set_material_priority(self, order):
-        if self.sim.policy_panel.rationing_rule == "FCFS":
+        if self.sim.policy_panel.rationing_rule == "FISFO":
             order.material_priority = order.arrival_time
-        elif self.sim.policy_panel.rationing_rule == "SPT":
-            order.material_priority = list(order.process_time.values())[0]
         elif self.sim.policy_panel.sequencing_rule == "EDD":
             order.material_priority = order.due_date
-        elif self.sim.policy_panel.rationing_rule == "SLACK":
-            order.material_priority = order.due_date - self.sim.env.now - order.remaining_process_time
-        elif self.sim.policy_panel.rationing_rule == "PMCT":
+        elif self.sim.policy_panel.rationing_rule == "Material":
             q = len(order.requirements)
             r = len(order.routing_sequence)
             order.material_priority = order.arrival_time + (q/(q + r)) * (order.due_date - order.arrival_time)
@@ -112,21 +108,19 @@ class Release(object):
             raise Exception('no valid rationing rule selected')
 
     def set_pool_priority(self, order):
-        if self.sim.policy_panel.release_technique in ['immediate', "DRACO"]:
+        """
+         if self.sim.policy_panel.release_technique in ['immediate']:
             order.pool_priority = order.arrival_time
         else:
-            if self.sim.policy_panel.sequencing_rule == "FCFS":
-                order.pool_priority = order.arrival_time
-            elif self.sim.policy_panel.sequencing_rule == "SPT":
-                order.pool_priority = list(order.process_time.values())[0]
-            elif self.sim.policy_panel.sequencing_rule in ["PRD", "MODCS"]:
-                order.pool_priority = order.pool_priority
-            elif self.sim.policy_panel.sequencing_rule == "EDD":
-                order.pool_priority = order.due_date
-            elif self.sim.policy_panel.sequencing_rule == "SLACK":
-                order.pool_priority = order.due_date - self.sim.env.now - order.remaining_process_time
-            else:
-                raise Exception('no valid pool sequencing rule selected')
+        """
+        if self.sim.policy_panel.sequencing_rule == "FISFO":
+            order.pool_priority = order.arrival_time
+        elif self.sim.policy_panel.sequencing_rule == "EDD":
+            order.pool_priority = order.due_date
+        elif self.sim.policy_panel.sequencing_rule == "Capacity":
+            order.pool_priority = order.due_date
+        else:
+            raise Exception('no valid pool sequencing rule selected')
         return
 
     @staticmethod
@@ -426,3 +420,18 @@ class Release(object):
             order = pool_item[self.index_order_object]
             material_needs[order.requirements[0]] += 1
         return material_needs
+
+    def material_planned_release_date(self, order):
+        n = len(self.sim.model_panel.material_types)
+        q = len(order.requirements)
+        return order.arrival_time + ((order.due_date - order.arrival_time) / n) * q
+
+    def capacity_planned_release_date(self, order):
+        m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
+        r = len(order.routing_sequence)
+        return order.arrival_time + ((order.due_date - order.arrival_time) / m) * r
+
+    def integrated_planned_release_date(self, order):
+        q = len(order.requirements)
+        r = len(order.routing_sequence)
+        return order.arrival_time + (order.due_date - order.arrival_time) * (q / (q + r))

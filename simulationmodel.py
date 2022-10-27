@@ -137,7 +137,10 @@ class SimulationModel(object):
         run_number = int(self.env.now / (self.model_panel.WARM_UP_PERIOD + self.model_panel.RUN_TIME))
         index = run_number - 1
         # statistics
-        statistics = self.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')
+        try:
+            statistics = self.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')
+        except (NameError, KeyError):
+            statistics = 'could not compute statistics'
         # print info
         try:
             if index == 0:

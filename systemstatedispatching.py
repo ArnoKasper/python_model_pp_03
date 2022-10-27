@@ -33,6 +33,13 @@ class SystemStateDispatching(object):
         self.S_list = list()
         self.V_list = list()
 
+        # IPD
+        self.IPD_pool_max = np.inf
+        self.IPD_pool_min = 0
+        self.IPD_dispatching_max = np.inf
+        self.IPD_dispatching_min = 0
+
+        # FOCUS
         self.p_ij_min = 0
         self.p_ij_mean = 0
         self.p_ij_max = np.inf
@@ -56,10 +63,10 @@ class SystemStateDispatching(object):
         assumes the use of IMM as release procedure
         """
         # update state variables
-        self.update_system_state_variables(work_centre=work_centre)
+        self.FOCUS_update_system_state_variables(work_centre=work_centre)
         # get impact of each order in queue
         for i, order_item in enumerate(queue_list):
-            projected_impact = self.D(order=order_item[self.index_order_object], work_centre=work_centre)
+            projected_impact = self.FOCUS(order=order_item[self.index_order_object], work_centre=work_centre)
             # attach impact to the order
             order_item[self.index_priority] = projected_impact
             # - 1 because simulation model minimizes
@@ -129,12 +136,14 @@ class SystemStateDispatching(object):
         # remove impact values previous decision
         self.max_impact_list = [0] * len(self.weights)
         # update state variables
-        self.update_system_state_variables(work_centre=work_centre)
+        self.DRACO_update_system_state_variables(work_centre=work_centre)
         # get impact of each order in queue or pool
         dispatching_options = pool_list + queue_list  # first queue, then pool
         # loop over all orders
         for i, order_item in enumerate(dispatching_options):
-            projected_impact = self.DRACO(order_item=order_item, work_centre=work_centre)
+            projected_impact = self.DRACO(order_item=order_item,
+                                          work_centre=work_centre,
+                                          pool_length=len(pool_list))
             # attach impact to the order
             order_item[self.index_priority] = projected_impact
             # - 1 because simulation model minimizes
@@ -201,7 +210,61 @@ class SystemStateDispatching(object):
             release_impact.append(rho)
         return sum([j * 1 / len(release_impact) for j in release_impact])
 
-    def D(self, order, work_centre):
+    def D(self, order, work_centre, pool_length):
+        if self.sim.policy_panel.ssd_rule == "FOCUS":
+            projected_impact = self.FOCUS(order=order, work_centre=work_centre)
+        elif self.sim.policy_panel.ssd_rule == "IPD":
+            # select condition
+            if pool_length != 0:
+                priority = self.IPD(order=order, condition='pool')
+
+                m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
+                r = len(order.routing_sequence_data)
+                n = len(self.sim.model_panel.material_types)
+                q = len(order.requirements)
+
+                normalized_priority = self.normalization(x=priority,
+                                                         x_min=self.IPD_pool_min,
+                                                         x_max=self.IPD_pool_max)
+
+                projected_impact = normalized_priority
+                # projected_impact = 1 / 2 * (normalized_priority + (r / m))
+                # projected_impact = 1 / 3 * (normalized_priority + (r / m) + (q / n))
+
+                # check projected impact
+                if projected_impact > 1:
+                    raise Exception("projected_impact > 1")
+                elif projected_impact < 0:
+                    raise Exception("projected_impact < 0")
+            else:
+                priority = self.IPD(order=order, condition='queue')
+                """
+                # projected_impact = priority / self.IPD_dispatching_max
+                projected_impact = self.normalization(x=priority,
+                                                      x_min=self.IPD_dispatching_min,
+                                                      x_max=self.IPD_dispatching_max)
+                """
+                projected_impact = - priority
+        else:
+            raise Exception("no valid priority rule defined")
+        return projected_impact
+
+    def DRACO(self, order_item, work_centre, pool_length):
+        order = order_item[self.index_order_object]
+        # get projected impact values
+        """
+        release element
+        """
+        release_impact = self.R(released=order.release)
+        """
+        dispatching element
+        """
+        dispatching_impact = self.D(order=order, work_centre=work_centre, pool_length=pool_length)
+        # aggregate all impact functions into list
+        projected_impact = sum([dispatching_impact * 1 / 2, release_impact * 1 / 2])
+        return projected_impact
+
+    def FOCUS(self, order, work_centre):
         """
         FOCUS dispatching element
         """
@@ -254,23 +317,65 @@ class SystemStateDispatching(object):
             dispatching_impact.append(delta_slack_per_operation_impact)
         return sum([j * 1 / len(dispatching_impact) for j in dispatching_impact])
 
-    def DRACO(self, order_item, work_centre):
-        order = order_item[self.index_order_object]
+    def IPD(self, order, condition):
+        if condition == 'pool':
+            # pool sequence rules
+            if self.sim.policy_panel.sequencing_rule == "FISFO":
+                priority = self.sim.env.now - order.arrival_time
+            elif self.sim.policy_panel.sequencing_rule == "EDD":
+                priority = order.due_date
+            else:
+                raise Exception('no valid pool sequencing rule selected for IPD')
+        elif condition == 'queue':
+            # dispatching rules
+            if self.sim.policy_panel.dispatching_rule == "FCFS":
+                priority = order.queue_entry_time[order.routing_sequence[0]]
+            elif self.sim.policy_panel.dispatching_rule == "FISFO":
+                priority = self.sim.env.now - order.arrival_time
+            elif self.sim.policy_panel.dispatching_rule == "FI-SHOP-FO":
+                priority = self.sim.env.now - order.release_time
+            elif self.sim.policy_panel.dispatching_rule == "EDD":
+                priority = order.due_date - self.sim.env.now
+            else:
+                raise Exception('no valid dispatching rule selected for IPD')
+        else:
+            raise Exception('no valid IPD procedure')
+        return priority
 
-        # get projected impact values
-        """
-        release element
-        """
-        release_impact = self.R(released=order.release)
-        """
-        dispatching element
-        """
-        dispatching_impact = self.D(order=order, work_centre=work_centre)
-        # aggregate all impact functions into list
-        projected_impact = sum([dispatching_impact * 1 / 2, release_impact * 1 / 2])
-        return projected_impact
+    def DRACO_update_system_state_variables(self, work_centre):
+        # special case for focus
+        if self.sim.policy_panel.ssd_rule == 'FOCUS':
+            self.FOCUS_update_system_state_variables(work_centre=work_centre)
+            return
 
-    def update_system_state_variables(self, work_centre):
+        """ set system-state variables """
+        self.S_list = list()
+        self.V_list = list()
+
+        """ gather info state variables """
+        self.WIP = 0
+        for id, order in self.order_book.items():
+            # collect WIP
+            if order.release:
+                self.WIP += 1
+            # collect dispatching/pool priority
+            if self.sim.policy_panel.ssd_rule == 'IPD':
+                # self.S_list.append(self.IPD(order=order, condition='pool'))
+                if order.routing_sequence[0] == work_centre:
+                    self.S_list.append(self.IPD(order=order, condition='pool'))
+                if order.release:
+                    self.V_list.append(self.IPD(order=order, condition='queue'))
+
+        """ update all state variables """
+        if not len(self.S_list) == 0:
+            self.IPD_pool_max = max(self.S_list)
+            self.IPD_pool_min = min(self.S_list)
+        if not len(self.V_list) == 0:
+            self.IPD_dispatching_max = max(self.V_list)
+            self.IPD_dispatching_min = min(self.V_list)
+        return
+
+    def FOCUS_update_system_state_variables(self, work_centre):
         """ check if update is needed """
         if self.last_update_system_state_variables == self.sim.env.now:
             return

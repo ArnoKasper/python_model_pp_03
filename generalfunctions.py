@@ -35,16 +35,16 @@ class GeneralFunctions(object):
         inter_arrival_time = round(inter_arrival_time, 5)
         return inter_arrival_time
 
-    def two_erlang(self, mean):
+    def k_erlang(self, mean, k):
         """
         two erlang distribution
-        :return: void
+        :return: voi
         """
-        mean_process_time = mean * 2
-        # pull truncated value
-        return self.random_generator.expovariate(mean_process_time) + \
-                          self.random_generator.expovariate(mean_process_time)
-
+        mean_process_time = mean * k
+        return_value = 0
+        for k in range(0, k):
+            return_value += self.random_generator.expovariate(mean_process_time)
+        return return_value
 
     def two_erlang_truncated(self, mean):
         """
@@ -95,6 +95,14 @@ class GeneralFunctions(object):
         :return: Due Date value
         """
         return self.sim.env.now + (order.process_time_cumulative * self.sim.policy_panel.DD_total_work_content_value)
+
+    def total_routing_content(self, order):
+        """
+        allocate due date to order by total work content
+        :param order:
+        :return: Due Date value
+        """
+        return self.sim.env.now + (len(order.routing_sequence_data) * self.sim.policy_panel.DD_total_routing_content_value)
 
     def ODD_land_adaption(self, order):
         """

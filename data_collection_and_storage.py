@@ -26,7 +26,9 @@ class DataCollection(object):
                             'material_waiting_time',
                             'material_replenishment_time',
                             'inventory_time',
-                            'material_present'
+                            'material_present',
+                            'routing_length',
+                            'number_of_materials'
                                 ]
         return
 
@@ -65,8 +67,6 @@ class DataCollection(object):
             columns=['run'])
 
         # generic measures
-        # df['service_level'] = self.demanded_items_fulfilled / self.demanded_items_counter
-
         number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
         df[f"utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
                              / self.sim.model_panel.RUN_TIME)
@@ -76,13 +76,14 @@ class DataCollection(object):
         df[f"mean_sttt"] = df_run.loc[:, "shop_throughput_time"].mean()
 
         # material information
-        df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
-        df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+        # df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
+        # df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
         df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
         df[f'fill_rate'] = df_run.loc[:, "material_present"].mean()
 
         # due date
         df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
+        df["std_lateness"] = df_run.loc[:, "lateness"].std()
         df["mean_tardiness"] = df_run.loc[:, "tardiness"].mean()
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
@@ -93,6 +94,7 @@ class DataCollection(object):
         # save data from the run
         if self.experiment_database is None:
             self.experiment_database = df
+            # self.experiment_database = df_run
         else:
             self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
         return

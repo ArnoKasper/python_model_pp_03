@@ -31,14 +31,15 @@ class Order(object):
         elif self.sim.model_panel.material_request == "variable":
             nr_materials = self.sim.NP_random_generator['inventory'].choice(a=np.array(self.sim.model_panel.material_quantity_range),
                                                                             size=1,
-                                                                            replace=False) + 1
+                                                                            replace=False)
             self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
                                                                                  size=nr_materials,
                                                                                  replace=False)
         elif self.sim.model_panel.material_request == "variable_replace":
             nr_materials = self.sim.NP_random_generator['inventory'].choice(a=np.array(self.sim.model_panel.material_quantity_range),
                                                                             size=1,
-                                                                            replace=False) + 1
+                                                                            replace=False)
+
             self.requirements = self.sim.NP_random_generator['inventory'].choice(a=material_types,
                                                                                  size=nr_materials,
                                                                                  replace=True)
@@ -112,8 +113,9 @@ class Order(object):
                     mean=self.sim.model_panel.MEAN_PROCESS_TIME
                 )
             elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "2_erlang":
-                self.process_time[WC] = self.sim.general_functions.two_erlang(
-                    mean=self.sim.model_panel.MEAN_PROCESS_TIME
+                self.process_time[WC] = self.sim.general_functions.k_erlang(
+                    mean=self.sim.model_panel.MEAN_PROCESS_TIME,
+                    k=2
                 )
             elif self.sim.model_panel.PROCESS_TIME_DISTRIBUTION == "exponential":
                 self.process_time[WC] = self.sim.general_functions.exponential(
@@ -151,6 +153,8 @@ class Order(object):
             self.due_date = self.sim.general_functions.add_constant_DD()
         elif self.sim.policy_panel.due_date_method == "total_work_content":
             self.due_date = self.sim.general_functions.total_work_content(order=self)
+        elif self.sim.policy_panel.due_date_method == "total_routing_content":
+            self.due_date = self.sim.general_functions.total_routing_content(order=self)
         else:
             raise Exception("no valid due date procedure selected")
 
