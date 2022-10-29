@@ -1,25 +1,8 @@
-check:
-- isolated M/M/1 check: validated
-- isolated base-stock: validated
-- LUMS COR & ODD: validated
-- SPT (via DRACO procedure and no materials): validated, exactly the same as code pp_05
-- FISFO (via IMM procedure and immediate material delivery): validated, exactly the same as code pp_05
-- isolated FOCUS: validated
-- isolated DRACO: validated
-- immediate supply and material supply equal: VALIDATED
+of experiment Innsbruck_IMM_immediate_low_GFS_9_10_arrival_20_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_reple_t  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  mean_replenishment_time  release_target
+ 3.0    89.828253 25.068488  0.426006  24.642482          9.997092       11.266196   0.880583     -19.911014     18.803468        1.965832               53.467201          0.144194            9.0                     10.0            20.0
 
 
-
-
-results of experiment Innsbruck_IMM_immediate_EDD_low_low_23_42_arrival_20_: (RANDOM)
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
- 3.0    90.282146 22.761728  0.808803  21.952924       19.447007   0.722766     -19.255197     17.177317        1.708391               37.454813          0.137562           23.0             42.0            20.0
-
-results of experiment Innsbruck_CONWIP_CONWIP_EDD_low_low_23_42_arrival_40_:  (RANDOM)
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
- 3.0    90.302871 24.847874  4.793959  20.053915       23.248263   0.806631      -17.16875     17.249468        1.982932               39.493769          0.171853           23.0             42.0            40.0
-
-results of experiment Innsbruck_DRACO_DRACO_EDD_low_low_23_42_arrival_20_: (RANDOM)
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  lead_time_level  release_target
- 3.0    90.280549 22.809017 10.143319  12.665697       28.432866    0.95242     -19.206772     14.340521        0.873724                 21.3592          0.085197           23.0             42.0            20.0
-
+results of experiment Innsbruck_CONWIP_CONWIP_low_GFS_9_10_arrival_45_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  mean_replenishment_time  release_target
+ 3.0    89.862653 27.841615  5.064979  22.776636       15.157963   0.921195     -17.138872     19.417136        2.587068               65.730056          0.187955            9.0                     10.0            45.0

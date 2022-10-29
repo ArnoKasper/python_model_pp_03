@@ -216,20 +216,42 @@ class SystemStateDispatching(object):
         elif self.sim.policy_panel.ssd_rule == "IPD":
             # select condition
             if pool_length != 0:
+                """
+                # get materials
+                material_projected_impact = 0
+                materials = False
+                requirements = []
+                if materials:
+                    for material in order.requirements:
+                        requirements.append(self.sim.inventory.on_hand_inventory[material])
+
+                    # inventory elements
+                    average = sum(requirements) / len(requirements)
+                    reorder_point = self.sim.policy_panel.reorder_level
+
+                    # material types
+                    n = len(self.sim.model_panel.material_types)
+                    q = len(order.requirements)
+
+                    if order.release:
+                        material_projected_impact = 1
+                    else:
+                        material_projected_impact = 1 - min(1, (average / reorder_point))
+
+                routing = False
+                routing_projected_impact = 0
+                if routing:
+                    m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
+                    r = len(order.routing_sequence)
+                    if order.release:
+                        routing_projected_impact = 1
+                    else:
+                        routing_projected_impact = (r / m)
+                """
                 priority = self.IPD(order=order, condition='pool')
-
-                m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
-                r = len(order.routing_sequence_data)
-                n = len(self.sim.model_panel.material_types)
-                q = len(order.requirements)
-
-                normalized_priority = self.normalization(x=priority,
+                projected_impact = self.normalization(x=priority,
                                                          x_min=self.IPD_pool_min,
                                                          x_max=self.IPD_pool_max)
-
-                projected_impact = normalized_priority
-                # projected_impact = 1 / 2 * (normalized_priority + (r / m))
-                # projected_impact = 1 / 3 * (normalized_priority + (r / m) + (q / n))
 
                 # check projected impact
                 if projected_impact > 1:
@@ -238,12 +260,6 @@ class SystemStateDispatching(object):
                     raise Exception("projected_impact < 0")
             else:
                 priority = self.IPD(order=order, condition='queue')
-                """
-                # projected_impact = priority / self.IPD_dispatching_max
-                projected_impact = self.normalization(x=priority,
-                                                      x_min=self.IPD_dispatching_min,
-                                                      x_max=self.IPD_dispatching_max)
-                """
                 projected_impact = - priority
         else:
             raise Exception("no valid priority rule defined")

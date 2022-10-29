@@ -12,7 +12,6 @@ import simulationmodel as sim
 
 
 class Experiment_Manager(object):
-
     # Creat a batch of experiments with a upper an lower limit
     def __init__(self, lower, upper):
         """
@@ -22,10 +21,8 @@ class Experiment_Manager(object):
         """
         self.lower = lower
         self.upper = upper
-
         if self.lower > self.upper:
             raise Exception("lower exp number higher than upper exp number")
-
         self.count_experiment = 0
         self.exp_manager()
 
@@ -39,7 +36,6 @@ class Experiment_Manager(object):
             # import simulation model and run
             self.sim = sim.SimulationModel(exp_number=i)
             self.sim.sim_function()
-
             # save the experiment
             self.saving_exp()
 
@@ -51,24 +47,26 @@ class Experiment_Manager(object):
         # initialize params
         df = self.sim.data.experiment_database
         file_version = ".csv"  # ".xlsx"#".csv"#
-
+        # get final statistics
+        try:
+            run_number = int(self.sim.env.now / (self.sim.model_panel.WARM_UP_PERIOD + self.sim.model_panel.RUN_TIME))
+            statistics = self.sim.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')
+            df['stat_dev'] = statistics[-1]
+        except (NameError, KeyError):
+            print('could not compute final statistics')
         # get file directory
         path = self.get_directory()
-
         # create the experimental name
         exp_name = self.sim.model_panel.experiment_name
-
         # save file
         file = path + exp_name + file_version
         try:
             # save as csv file
             if file_version == ".csv":
                 self.save_database_csv(file=file, database=df)
-
             # save as excel file
             elif file_version == ".xlsx":
                 self.save_database_xlsx(file=file, database=df)
-
         except PermissionError:
             # failed to save, make a random addition to the name to save anyway
             from string import ascii_lowercase, digits
@@ -77,29 +75,22 @@ class Experiment_Manager(object):
             strings = []
             strings[:0] = ascii_lowercase + digits
             name_lenght = random_genetator.randint(1, len(strings) + 1)
-
             # build the name
             for j in range(0, name_lenght):
                 random_genetator.shuffle(strings)
                 random_name += strings[j]
-
             # change original name
             file = path + random_name + exp_name + file_version
-
             # save as csv file
             if file_version == ".csv":
                 self.save_database_csv(file=file, database=df)
-
             # save as excel file
             elif file_version == ".xlsx":
                 self.save_database_xlsx(file=file, database=df)
-
             # notify the user
             warnings.warn(f"Permission Error, saved with name {random_name + exp_name}", Warning)
-
         # add the experiment number for the next experiment
         self.count_experiment += 1
-
         if self.sim.model_panel.print_results:
             try:
                 print(f"\nresults of experiment {exp_name}:")

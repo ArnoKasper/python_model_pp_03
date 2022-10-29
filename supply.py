@@ -39,6 +39,11 @@ class Supply(object):
             shipping_time = mean_replenishment_time
         elif self.sim.model_panel.SUPPLY_DISTRIBUTION == 'exponential':
             shipping_time = self.sim.NP_random_generator['supply'].exponential(mean_replenishment_time)
+        elif self.sim.model_panel.SUPPLY_DISTRIBUTION == 'k_erlang':
+            k = 2
+            shipping_time = 0
+            for _ in range(0, k):
+                shipping_time += self.sim.NP_random_generator['supply'].exponential(mean_replenishment_time * k)
         else:
             raise Exception(f'unknown replenishment time distribution')
         # get material expected_lead_time

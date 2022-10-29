@@ -19,11 +19,10 @@ class ModelPanel(object):
         self.experiment_name: str = self.project_name + "_"
         self.names_variables = ["name",
                                 'release_technique',
-                                'pool_rule',
                                 "material_complexity",
-                                "shop_complexity",
+                                "routing_configuration",
                                 "reorder_level",
-                                "lead_time_level",
+                                "mean_replenishment_time",
                                 "reorder_moment",
                                 "release_target"
                                 ]
@@ -35,12 +34,11 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 5 # 100  # number of replications
+        self.NUMBER_OF_RUNS: int = 100  # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": self.params_dict["shop_complexity_dict"]["work_centres"],
-                                'routing_configuration': self.params_dict["shop_complexity_dict"][
-                                    "routing_configuration"]
+        self.SHOP_ATTRIBUTES = {"work_centres": 6,
+                                'routing_configuration': self.params_dict["routing_configuration"]
                                 }
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
@@ -115,7 +113,7 @@ class ModelPanel(object):
         # materials
         self.SKU: Dict[...] = {}
         self.materials = {}
-        self.expected_replenishment_time = 10
+        self.expected_replenishment_time = self.params_dict["mean_replenishment_time"]
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
@@ -126,11 +124,18 @@ class ModelPanel(object):
                                                   id=f"{type}"
                                                   )
         """
-        - immediate, i.e., replenishment time is zero.
-        - supplier, i.e., replenishment time is non-zero
+        supply modes
+            - immediate, i.e., replenishment time is zero.
+            - supplier, i.e., replenishment time is non-zero
+        supply distributions
+            - constant
+            - exponential
+            - k erlang
+                need to define k
         """
         self.DELIVERY = "supplier"  # "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
+        self.supply_k = 2
         return
 
 
@@ -148,9 +153,8 @@ class PolicyPanel(object):
             - total_routing_content
         """
         self.due_date_method: str = 'random'
-        self.DD_constant_value: float = self.params_dict["lead_time_level"]
-        self.DD_random_min_max: List[int, int] = [self.params_dict["lead_time_level"] - 10,
-                                                  self.params_dict["lead_time_level"] + 10]
+        self.DD_constant_value: float = 45
+        self.DD_random_min_max: List[int, int] = [35, 55]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
@@ -203,7 +207,7 @@ class PolicyPanel(object):
             - IPRD
         """
         # release technique
-        self.release_technique = self.params_dict['release_technique'] # "DRACO" # "immediate" #
+        self.release_technique = self.params_dict['release_technique']  # "DRACO" # "immediate" #
         self.release_technique_attributes = RELEASE_TECHNIQUE_ATTRIBUTES[self.release_technique].copy()
         self.release_process_times = 'deterministic'
 
@@ -221,8 +225,8 @@ class PolicyPanel(object):
         self.release_target = self.params_dict['release_target']
 
         # pool rule
-        self.sequencing_rule = self.params_dict['pool_rule']
-        self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES[self.params_dict['pool_rule']].copy()
+        self.sequencing_rule = 'EDD'
+        self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES[self.sequencing_rule].copy()
 
         # dispatching
         """
@@ -250,7 +254,7 @@ class PolicyPanel(object):
                     - SLACK
                     - PMCT
         """
-        self.material_allocation = self.params_dict['material_allocation']
+        self.material_allocation = 'availability'
         self.rationing_rule = 'FCFS'
         return
 
