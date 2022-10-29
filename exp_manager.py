@@ -8,6 +8,7 @@ import socket
 import random
 import warnings
 import os
+import sys
 import simulationmodel as sim
 
 
@@ -24,6 +25,7 @@ class Experiment_Manager(object):
         if self.lower > self.upper:
             raise Exception("lower exp number higher than upper exp number")
         self.count_experiment = 0
+        self.sim = None
         self.exp_manager()
 
     def exp_manager(self):
@@ -33,11 +35,21 @@ class Experiment_Manager(object):
         """
         # use a loop to illiterate multiple experiments from the exp_dat list
         for i in range(self.lower, (self.upper + 1)):
-            # import simulation model and run
-            self.sim = sim.SimulationModel(exp_number=i)
-            self.sim.sim_function()
-            # save the experiment
-            self.saving_exp()
+            try:
+                # import simulation model and run
+                self.sim = sim.SimulationModel(exp_number=i)
+                self.sim.sim_function()
+                # save the experiment
+                self.saving_exp()
+                # flush output here to force SIGPIPE to be triggered
+                # while inside this try block.
+                sys.stdout.flush()
+            except BrokenPipeError:
+                # Python flushes standard streams on exit; redirect remaining output
+                # to devnull to avoid another BrokenPipeError at shutdown
+                devnull = os.open(os.devnull, os.O_WRONLY)
+                os.dup2(devnull, sys.stdout.fileno())
+                sys.exit(1)  # Python exits with error code 1 on EPIPE
 
     def saving_exp(self):
         """
