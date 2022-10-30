@@ -24,6 +24,11 @@ class Supply(object):
                                     capacity_slots=1,
                                     id=f"supplier"
                                     )
+
+        # disruption parameters
+        self.start_time_disruption = self.sim.model_panel.RUN_TIME/2
+        self.item_type_disrupted = []
+        self.pick_disrupted_item()
         return
 
     def delivery(self, item_type):
@@ -33,8 +38,39 @@ class Supply(object):
             self.sim.env.process(self.capacitated_delivery(item_type=item_type))
         return
 
+    def pick_disrupted_item(self):
+        material_types = self.sim.model_panel.material_types.copy()
+        for run in range(0, self.sim.model_panel.NUMBER_OF_RUNS):
+            material = self.sim.NP_random_generator['disruption'].choice(a=material_types, size=1, replace=True)
+            self.item_type_disrupted.append(material)
+        return
+
+    def disruption_index(self, item_type):
+        t = self.sim.env.now
+        run_number = int(t / (self.sim.model_panel.WARM_UP_PERIOD + self.sim.model_panel.RUN_TIME)) + 1
+        if item_type != self.item_type_disrupted[run_number - 1]:
+            # this item is not disrupted
+            return 1
+        else:
+            # check if there is a disruption
+            run_start_time = (run_number - 1) * (self.sim.model_panel.WARM_UP_PERIOD + self.sim.model_panel.RUN_TIME)
+            disruption_starts = run_start_time + self.sim.model_panel.WARM_UP_PERIOD + self.start_time_disruption
+            disruption_ends = disruption_starts + self.sim.model_panel.disruption_duration
+            if t < disruption_starts or t > disruption_ends:
+                return 1
+            else:
+                time_evolved = t - disruption_starts
+                disruption_index = (self.sim.model_panel.disruption_severity / self.sim.model_panel.disruption_duration)
+                return 1 + (disruption_index * (self.sim.model_panel.disruption_duration - time_evolved))
+
     def parallel_delivery(self, item_type):
-        mean_replenishment_time = self.sim.model_panel.materials[item_type]['expected_lead_time']
+        # determine the expected time
+        if not self.sim.model_panel.DISRUPTION:
+            mean_replenishment_time = self.sim.model_panel.materials[item_type]['expected_lead_time']
+        else:
+            mean_replenishment_time = self.disruption_index(item_type=item_type) * \
+                                      self.sim.model_panel.materials[item_type]['expected_lead_time']
+        # get stochastic value
         if self.sim.model_panel.SUPPLY_DISTRIBUTION == 'constant':
             shipping_time = mean_replenishment_time
         elif self.sim.model_panel.SUPPLY_DISTRIBUTION == 'exponential':
@@ -60,7 +96,13 @@ class Supply(object):
         return
 
     def capacitated_delivery(self, item_type):
-        mean_replenishment_time = self.sim.model_panel.materials[item_type]['expected_lead_time']
+        # determine the expected time
+        if not self.sim.model_panel.DISRUPTION:
+            mean_replenishment_time = self.sim.model_panel.materials[item_type]['expected_lead_time']
+        else:
+            mean_replenishment_time = self.disruption_index(item_type=item_type) * \
+                                      self.sim.model_panel.materials[item_type]['expected_lead_time']
+        # get stochastic value
         if self.sim.model_panel.SUPPLY_DISTRIBUTION == 'constant':
             shipping_time = mean_replenishment_time
         elif self.sim.model_panel.SUPPLY_DISTRIBUTION == 'exponential':

@@ -23,7 +23,7 @@ class ModelPanel(object):
                                 "routing_configuration",
                                 "reorder_level",
                                 "mean_replenishment_time",
-                                "reorder_moment",
+                                "material_allocation",
                                 "release_target"
                                 ]
         self.indexes = self.names_variables.copy()
@@ -32,7 +32,7 @@ class ModelPanel(object):
             self.experiment_name += str(self.params_dict[i]) + "_"
 
         # simulation parameters
-        self.WARM_UP_PERIOD: int = 3000  # warm-up period simulation model
+        self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
         self.NUMBER_OF_RUNS: int = 100  # number of replications
 
@@ -136,6 +136,10 @@ class ModelPanel(object):
         self.DELIVERY = "supplier"  # "immediate"
         self.SUPPLY_DISTRIBUTION = 'exponential'
         self.supply_k = 2
+
+        self.DISRUPTION = True
+        self.disruption_severity = 1.5
+        self.disruption_duration = 500
         return
 
 
@@ -153,8 +157,8 @@ class PolicyPanel(object):
             - total_routing_content
         """
         self.due_date_method: str = 'random'
-        self.DD_constant_value: float = 45
-        self.DD_random_min_max: List[int, int] = [35, 55]
+        self.DD_constant_value: float = 55
+        self.DD_random_min_max: List[int, int] = [45, 65]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
@@ -175,7 +179,7 @@ class PolicyPanel(object):
             - release
             - arrival 
         """
-        self.reorder_moment = self.params_dict['reorder_moment']
+        self.reorder_moment = 'arrival'
 
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
@@ -254,8 +258,8 @@ class PolicyPanel(object):
                     - SLACK
                     - PMCT
         """
-        self.material_allocation = 'availability'
-        self.rationing_rule = 'FCFS'
+        self.material_allocation = self.params_dict['material_allocation'] # 'availability'
+        self.rationing_rule = 'EDD'
         return
 
 

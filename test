@@ -1,8 +1,5 @@
-of experiment Innsbruck_IMM_immediate_low_GFS_9_10_arrival_20_:
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_reple_t  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  mean_replenishment_time  release_target
- 3.0    89.828253 25.068488  0.426006  24.642482          9.997092       11.266196   0.880583     -19.911014     18.803468        1.965832               53.467201          0.144194            9.0                     10.0            20.0
 
-
-results of experiment Innsbruck_CONWIP_CONWIP_low_GFS_9_10_arrival_45_:
+results of experiment Innsbruck_IMM_immediate_moderate_GFS_103_50_rationing_45_:
  run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  mean_replenishment_time  release_target
- 3.0    89.862653 27.841615  5.064979  22.776636       15.157963   0.921195     -17.138872     19.417136        2.587068               65.730056          0.187955            9.0                     10.0            45.0
+ 3.0    89.842881 27.231836  2.828155  24.403681       39.021178   0.691149     -27.747987     19.215484        1.154052               30.566058          0.088098          103.0                     50.0            45.0
+

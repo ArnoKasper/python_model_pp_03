@@ -44,7 +44,7 @@ class SimulationModel(object):
 
         # numpy common random number streams
         self.NP_random_generator = {}
-        streams_for = ['inventory', 'supply']
+        streams_for = ['inventory', 'supply', 'disruption']
         self.seed_sequence = np.random.SeedSequence(12345)
         self.child_seeds = self.seed_sequence.spawn(len(streams_for))
         streams = [np.random.default_rng(s) for s in self.child_seeds]
