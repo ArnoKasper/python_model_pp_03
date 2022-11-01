@@ -27,7 +27,7 @@ class Inventory(object):
         # update state
         material.in_inventory = True
         # update as material has arrived
-        self.inventory_update_release()
+        self.inventory_update_release(material=material.type)
         return
 
     @staticmethod
@@ -77,8 +77,14 @@ class Inventory(object):
         material = item_list[self.index_order_object]
         return material
 
-    def inventory_availability_check(self, material, amount):
-        if self.on_hand_inventory[material] >= amount:
+    def inventory_availability_check(self, material, amount, fill_rate_check):
+        # set rationing threshold
+        if self.material_allocation == 'rationing' and not fill_rate_check:
+            threshold = self.sim.policy_panel.rationing_threshold
+        else:
+            threshold = 0
+        # check inventory
+        if self.on_hand_inventory[material] - threshold >= amount:
             return True
         else:
             return False
@@ -110,15 +116,13 @@ class Inventory(object):
                 else:
                     raise Exception(
                         f'unknown material allocation policy {self.sim.policy_panel.material_allocation_rule}')
-
                 # check materials
-                if self.inventory_availability_check(material=material, amount=inventory_level):
+                if self.inventory_availability_check(material=material, amount=inventory_level, fill_rate_check=fill_rate_check):
                     # inventory available, indicate with 1
                     availability.append(1)
                 else:
                     # inventory not available, indicate with 0
                     availability.append(0)
-
             # control if all the orders material requirements are satisfied
             if sum(availability) == len(availability):
                 # collect data, check if this is the first time when the materials are available
@@ -134,9 +138,9 @@ class Inventory(object):
                 order.material_available_time = self.sim.env.now
             return True
 
-    def inventory_update_release(self):
+    def inventory_update_release(self, material):
         if self.sim.policy_panel.release_technique == "DRACO":
-            self.sim.system_state_dispatching.full_control_mode(trigger_mode='supply')
+            self.sim.system_state_dispatching.full_control_mode(trigger_mode='supply', material=material)
         else:
             self.sim.release.activate_release(material_arrival=True)
         return

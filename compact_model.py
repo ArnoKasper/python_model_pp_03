@@ -325,7 +325,6 @@ class Process(object):
         """
         # order is released, collect data
         order.release_time = self.sim.env.now
-        order.pool_time = order.release_time - order.material_arrival_time
 
         # adjust ODD according to Land et al., (2014)
         if self.sim.control_panel.dispatching_rule == "ODD":

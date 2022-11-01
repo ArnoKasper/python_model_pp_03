@@ -77,7 +77,7 @@ class DataCollection(object):
 
         # material information
         # df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
-        # df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+        df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
         df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
         df[f'fill_rate'] = df_run.loc[:, "material_present"].mean()
 

@@ -1,5 +1,0 @@
-
-results of experiment Innsbruck_IMM_immediate_moderate_GFS_103_50_rationing_45_:
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  reorder_level  mean_replenishment_time  release_target
- 3.0    89.842881 27.231836  2.828155  24.403681       39.021178   0.691149     -27.747987     19.215484        1.154052               30.566058          0.088098          103.0                     50.0            45.0
-

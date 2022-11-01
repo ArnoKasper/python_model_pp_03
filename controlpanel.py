@@ -24,7 +24,8 @@ class ModelPanel(object):
                                 "reorder_level",
                                 "mean_replenishment_time",
                                 "material_allocation",
-                                "release_target"
+                                "release_target",
+                                'disruption'
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -34,7 +35,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 100  # number of replications
+        self.NUMBER_OF_RUNS: int = 150  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -130,15 +131,15 @@ class ModelPanel(object):
         supply distributions
             - constant
             - exponential
-            - k erlang
+            - k_erlang
                 need to define k
         """
         self.DELIVERY = "supplier"  # "immediate"
-        self.SUPPLY_DISTRIBUTION = 'exponential'
+        self.SUPPLY_DISTRIBUTION = 'k_erlang'
         self.supply_k = 2
-
-        self.DISRUPTION = True
-        self.disruption_severity = 1.5
+        # disruption
+        self.DISRUPTION = self.params_dict["disruption"]
+        self.disruption_severity = 1
         self.disruption_duration = 500
         return
 
@@ -158,7 +159,7 @@ class PolicyPanel(object):
         """
         self.due_date_method: str = 'random'
         self.DD_constant_value: float = 55
-        self.DD_random_min_max: List[int, int] = [45, 65]
+        self.DD_random_min_max: List[int, int] = [45, 75]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
@@ -256,10 +257,12 @@ class PolicyPanel(object):
                     - SPT
                     - EDD
                     - SLACK
-                    - PMCT
+                    - PRD
+                - requires a rationing threshold => 0 
         """
         self.material_allocation = self.params_dict['material_allocation'] # 'availability'
-        self.rationing_rule = 'EDD'
+        self.rationing_rule = 'PRD'
+        self.rationing_threshold = 0
         return
 
 

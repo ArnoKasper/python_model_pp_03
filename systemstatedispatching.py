@@ -73,14 +73,13 @@ class SystemStateDispatching(object):
             order_item[self.index_priority] = order_item[self.index_priority] * -1
         return queue_list
 
-    def full_control_mode(self, work_centre=None, order=None, trigger_mode='dispatching'):
+    def full_control_mode(self, work_centre=None, order=None, trigger_mode='dispatching', material=None):
         """
         control approach of DRACO
         work_centre:    the work_centre that idle
         order:          order object
         trigger_mode:   trigger mode, can be 'arrival', 'supply' and 'dispatching'
         """
-        # print(trigger_mode)
         # depending on the triggering mode, the work centre needs to be found
         if trigger_mode == 'arrival':
             # control if the queue is not empty
@@ -89,7 +88,7 @@ class SystemStateDispatching(object):
                 return None, True
             else:
                 # work centre is idling, needs a new order
-                # material check, update allocation variables if rationing is used
+                # update the material allocation policy, if necessary
                 if self.sim.policy_panel.material_allocation == 'rationing':
                     self.sim.inventory.rationing_sequence_update()
                 # do the material check
@@ -100,30 +99,51 @@ class SystemStateDispatching(object):
                     # work centre starving, but materials are not there
                     return None, True
         elif trigger_mode == 'supply':
+            # check if there are orders in pool
+            if len(self.sim.model_panel.POOLS.items) == 0:
+                # no orders to dedicate the materials to
+                return None, True
+            # orders available, check if a work centre is idling.
+            idle_work_centre = []
             for potential_starving_work_centre in self.sim.model_panel.WORK_CENTRES:
-                starving_work_centre = []
                 if self.sim.release.control_queue_empty(work_centre=potential_starving_work_centre):
-                    starving_work_centre.append(potential_starving_work_centre)
-                """
-                there must be a selection procedure when material is scare to identify where to send the order to
-                """
-                # choose work centre
-                if len(starving_work_centre) == 0:
-                    return None, True
-                elif len(starving_work_centre) == 1:
-                    work_centre = starving_work_centre[0]
-                else:
-                    # multiple work centres starving, choose randomly
-                    work_centre = self.sim.random_generator.sample(starving_work_centre, 1)
-                    print('random choice made!')
+                    idle_work_centre.append(potential_starving_work_centre)
+            # check for starvation
+            if len(idle_work_centre) == 0:
+                # no need to release
+                return None, True
+            # check if orders in the pool move to a idling work centre, i.e. a starving one
+            starving_work_centre_with_orders = []
+            for starving_wc in idle_work_centre:
+                for order_list in self.sim.model_panel.POOLS.items:
+                    order = order_list[self.index_order_object]
+                    wc_check = order.routing_sequence[0] == starving_wc  # check gateway
+                    material_check = material in order.requirements  # check material
+                    if wc_check and material_check:
+                        # release is possible
+                        starving_work_centre_with_orders.append(starving_wc)
+            # check if release is possible
+            if len(starving_work_centre_with_orders) == 0:
+                # no starving work centres; no need to release
+                return None, True
+            elif len(starving_work_centre_with_orders) == 1:  # check there are multiple gateways
+                # only work centre starving, select work centre and continue
+                work_centre = starving_work_centre_with_orders[0]
+            else:
+                # multiple work centres starving, choose according to (pool) priority
+                work_centre = self.starvation_work_centre_choice(starving_work_centres=starving_work_centre_with_orders,
+                                                                 material=material)
+                if work_centre is None:
+                    raise Exception('DRACO: no work centre chosen, while order is starving!')
 
         # get the orders in the queue and pool
         queue_list = self.sim.model_panel.QUEUES[work_centre].items.copy()
+        # get the pool of orders with materials available
         entire_pool_list, pool_empty = self.sim.release.get_release_list()
         # check orders in pool
         if not pool_empty:
             # find the orders in the pool that start at work centre
-            pool_list = self.get_release_list(pool_list=entire_pool_list, work_centre=work_centre)
+            pool_list = self.get_workcentre_specific_release_list(pool_list=entire_pool_list, work_centre=work_centre)
         else:
             # no orders in the pool
             pool_list = []
@@ -133,8 +153,6 @@ class SystemStateDispatching(object):
             # no orders to process, leave the machine idle.
             return None, True
 
-        # remove impact values previous decision
-        self.max_impact_list = [0] * len(self.weights)
         # update state variables
         self.DRACO_update_system_state_variables(work_centre=work_centre)
         # get impact of each order in queue or pool
@@ -216,38 +234,6 @@ class SystemStateDispatching(object):
         elif self.sim.policy_panel.ssd_rule == "IPD":
             # select condition
             if pool_length != 0:
-                """
-                # get materials
-                material_projected_impact = 0
-                materials = False
-                requirements = []
-                if materials:
-                    for material in order.requirements:
-                        requirements.append(self.sim.inventory.on_hand_inventory[material])
-
-                    # inventory elements
-                    average = sum(requirements) / len(requirements)
-                    reorder_point = self.sim.policy_panel.reorder_level
-
-                    # material types
-                    n = len(self.sim.model_panel.material_types)
-                    q = len(order.requirements)
-
-                    if order.release:
-                        material_projected_impact = 1
-                    else:
-                        material_projected_impact = 1 - min(1, (average / reorder_point))
-
-                routing = False
-                routing_projected_impact = 0
-                if routing:
-                    m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
-                    r = len(order.routing_sequence)
-                    if order.release:
-                        routing_projected_impact = 1
-                    else:
-                        routing_projected_impact = (r / m)
-                """
                 priority = self.IPD(order=order, condition='pool')
                 projected_impact = self.normalization(x=priority,
                                                          x_min=self.IPD_pool_min,
@@ -391,6 +377,22 @@ class SystemStateDispatching(object):
             self.IPD_dispatching_min = min(self.V_list)
         return
 
+    def starvation_work_centre_choice(self, starving_work_centres, material):
+        min_priority = np.inf
+        min_work_centre = None
+        for order_list in self.sim.model_panel.POOLS.items:
+            order = order_list[self.index_order_object]
+            # collect dispatching/pool priority
+            if self.sim.policy_panel.ssd_rule == 'IPD':
+                material_check = material in order.requirements
+                work_centre_check = order.routing_sequence[0] in starving_work_centres
+                if material_check and work_centre_check:
+                    priority = self.IPD(order=order, condition='pool')
+                    if priority < min_priority:
+                        min_priority = priority
+                        min_work_centre = order.routing_sequence[0]
+        return min_work_centre
+
     def FOCUS_update_system_state_variables(self, work_centre):
         """ check if update is needed """
         if self.last_update_system_state_variables == self.sim.env.now:
@@ -445,7 +447,7 @@ class SystemStateDispatching(object):
                     pool, _ = self.sim.release.get_release_list()
                     if pool is not None:
                         # split pool into subsets based on their gateway.
-                        pool_WC = self.get_release_list(pool_list=pool, work_centre=WC)
+                        pool_WC = self.get_workcentre_specific_release_list(pool_list=pool, work_centre=WC)
                         if len(pool_WC) > 0:
                             pool_empty = False
                         else:
@@ -515,7 +517,7 @@ class SystemStateDispatching(object):
             result = (x_max - x) / (x_max - x_min)
         return result
 
-    def get_release_list(self, pool_list, work_centre):
+    def get_workcentre_specific_release_list(self, pool_list, work_centre):
         return_list = []
         for order_list in pool_list:
             if order_list[self.index_order_object].routing_sequence[0] == work_centre:

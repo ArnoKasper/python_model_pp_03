@@ -98,12 +98,11 @@ class Release(object):
     def set_material_priority(self, order):
         if self.sim.policy_panel.rationing_rule == "FISFO":
             order.material_priority = order.arrival_time
-        elif self.sim.policy_panel.sequencing_rule == "EDD":
+        elif self.sim.policy_panel.rationing_rule == "EDD":
             order.material_priority = order.due_date
-        elif self.sim.policy_panel.rationing_rule == "Material":
-            q = len(order.requirements)
+        elif self.sim.policy_panel.rationing_rule == "PRD":
             r = len(order.routing_sequence)
-            order.material_priority = order.arrival_time + (q/(q + r)) * (order.due_date - order.arrival_time)
+            order.material_priority = order.due_date - r * 5.625
         else:
             raise Exception('no valid rationing rule selected')
 
@@ -116,8 +115,6 @@ class Release(object):
         if self.sim.policy_panel.sequencing_rule == "FISFO":
             order.pool_priority = order.arrival_time
         elif self.sim.policy_panel.sequencing_rule == "EDD":
-            order.pool_priority = order.due_date
-        elif self.sim.policy_panel.sequencing_rule == "Capacity":
             order.pool_priority = order.due_date
         else:
             raise Exception('no valid pool sequencing rule selected')
