@@ -5,7 +5,6 @@ Version: 1.1.0
 """
 
 material_complexity = ['low', 'moderate', 'high']
-shop_complexity = ['GFS'] #['GFS', 'PJS']
 DRACO_WIP_target = [15, 25]
 CONWIP_WIP_target = [42, 47]
 disruptions = [True, False]
@@ -14,10 +13,9 @@ material_allocation = ['availability', 'rationing']
 
 release_technique = ["DRACO", 'CONWIP', "IMM"]
 
-mean_replenishment_times = [50]
 
 reorder_level_dict = {'10': [23, 24, 27],
-                      '50': {'low': [32, 35, 38], 'moderate': [102, 105, 110], 'high': [103, 105, 110]},
+                      '50': {'low': [32, 35, 38], 'moderate': [102, 105, 110], 'high': [102, 105, 110]},
                       '100': [200, 210, 220]
                       }
 
@@ -30,7 +28,7 @@ material_complexity_dict = {'low': {'material_quantity': 1, "material_request": 
 experimental_params_dict = []
 
 def get_interactions():
-    #"""
+    """
     # IMM
     for m_complexity in material_complexity:
         for s_complexity in shop_complexity:
@@ -95,15 +93,16 @@ def get_interactions():
     """
     params_dict = dict()
     params_dict["name"] = "IMM"
-    params_dict["release_technique"] = "immediate"
+    params_dict["release_technique"] = "DRACO"
     params_dict["material_complexity"] = "high"
     params_dict["material_complexity_dict"] = material_complexity_dict["high"]
-    params_dict["routing_configuration"] = "GFS"
-    params_dict["reorder_level"] = 105
-    params_dict["mean_replenishment_time"] = 50
-    params_dict["material_allocation"] = "availability" # 'rationing' #
-    params_dict["release_target"] = 20
-    params_dict["disruption"] = True
+    params_dict["material_allocation"] = 'NHB' # "NHB" #
+    params_dict["material_replenishment"] = 'intergral' # 'hierarchical' #
+    params_dict["release_target"] = 25
+    params_dict["holding_cost"] = 0.1
+    params_dict["WIP_cost"] = 1
+    params_dict["earliness_cost"] = 0.5
+    params_dict["tardiness_cost"] = 4.5
     experimental_params_dict.append(params_dict)
     #"""
     print(len(experimental_params_dict))

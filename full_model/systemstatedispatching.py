@@ -89,7 +89,7 @@ class SystemStateDispatching(object):
             else:
                 # work centre is idling, needs a new order
                 # update the material allocation policy, if necessary
-                if self.sim.policy_panel.material_allocation == 'rationing':
+                if self.sim.policy_panel.material_allocation == 'HB':
                     self.sim.inventory.rationing_sequence_update()
                 # do the material check
                 if self.sim.inventory.material_check(order=order):
@@ -326,6 +326,9 @@ class SystemStateDispatching(object):
                 priority = self.sim.env.now - order.arrival_time
             elif self.sim.policy_panel.sequencing_rule == "EDD":
                 priority = order.due_date
+            elif self.sim.policy_panel.rationing_rule == "PRD":
+                r = len(order.routing_sequence)
+                priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
             else:
                 raise Exception('no valid pool sequencing rule selected for IPD')
         elif condition == 'queue':

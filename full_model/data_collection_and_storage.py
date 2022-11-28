@@ -15,21 +15,21 @@ class DataCollection(object):
 
         # columns names
         self.columns_names_run = [
-                            'identifier',
-                            'product_name',
-                            'throughput_time',
-                            'pool_time',
-                            'shop_throughput_time',
-                            'lateness',
-                            'tardiness',
-                            'tardy',
-                            'material_waiting_time',
-                            'material_replenishment_time',
-                            'inventory_time',
-                            'material_present',
-                            'routing_length',
-                            'number_of_materials'
-                                ]
+            'identifier',
+            'product_name',
+            'throughput_time',
+            'pool_time',
+            'shop_throughput_time',
+            'lateness',
+            'tardiness',
+            'tardy',
+            'material_waiting_time',
+            'material_replenishment_time',
+            'inventory_time',
+            'material_present',
+            'routing_length',
+            'number_of_materials'
+        ]
         return
 
     def append_run_list(self, result_list):
@@ -69,7 +69,7 @@ class DataCollection(object):
         # generic measures
         number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
         df[f"utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
-                             / self.sim.model_panel.RUN_TIME)
+                              / self.sim.model_panel.RUN_TIME)
         # order information
         df[f"mean_ttt"] = df_run.loc[:, "throughput_time"].mean()
         df[f"mean_ptt"] = df_run.loc[:, "pool_time"].mean()
@@ -77,7 +77,8 @@ class DataCollection(object):
 
         # material information
         # df[f"mean_mat_avail_t"] = df_run.loc[:, "material_waiting_time"].mean()
-        df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+        # df[f'mean_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].mean()
+        # df[f'std_mat_reple_t'] = df_run.loc[:, "material_replenishment_time"].std()
         df[f'mean_mat_inv_t'] = df_run.loc[:, "inventory_time"].mean()
         df[f'fill_rate'] = df_run.loc[:, "material_present"].mean()
 
@@ -88,13 +89,24 @@ class DataCollection(object):
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
 
+        # cost
+        arrival_rate = 1 / self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
+        mean_A = sum(self.sim.policy_panel.DD_random_min_max) / len(self.sim.policy_panel.DD_random_min_max)
+        df_run["earliness"] = mean_A - df_run.loc[:, "throughput_time"].mean() + df_run.loc[:, "tardiness"].mean()
+
+        df["mean_holding_cost"] = df_run.loc[:, "inventory_time"].mean() * arrival_rate * self.sim.model_panel.holding_cost
+        df["mean_WIP_cost"] = df_run.loc[:, "shop_throughput_time"].mean() * arrival_rate * self.sim.model_panel.WIP_cost
+        df["mean_earliness_cost"] = df_run.loc[:, "earliness"].mean() * self.sim.model_panel.earliness_cost
+        df["mean_tardiness_cost"] = df_run.loc[:, "tardiness"].mean() * self.sim.model_panel.tardiness_cost
+        df["mean_total_cost"] = df[["mean_holding_cost", "mean_WIP_cost", "mean_earliness_cost", "mean_tardiness_cost"]].sum(axis=1)
+
         df_exp_interactions = self.add_experiment_variables()
         df = pd.concat([df, df_exp_interactions], axis=1)
 
         # save data from the run
         if self.experiment_database is None:
             self.experiment_database = df
-            # self.experiment_database = df_run
+            # self.experiment_database = df_run # save the entire run database
         else:
             self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
         return

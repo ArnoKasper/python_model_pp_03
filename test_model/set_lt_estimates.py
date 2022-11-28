@@ -16,17 +16,30 @@ import socket
 import warnings
 import os
 import time
+import math
+import set_lt_est_exp_paramaters as parameters
 
 
 class ControlPanel(object):
-    def __init__(self, simulation):
+    def __init__(self, simulation, exp_number):
         """
         class that contains all the settings for the simulation model.
         """
         # general params
+        self.experiment_number = exp_number
         self.sim = simulation
+        experimental_params_dict = parameters.get_interactions()
+        self.params_dict = experimental_params_dict[self.experiment_number]
         self.print_info = True
-        self.experiment_name = "compact_model"
+
+        # set experiment name
+        self.names_variables = ["utilization",
+                                'm_machines'
+                                ]
+        self.indexes = self.names_variables.copy()
+        self.experiment_name: str = f"lt_est_test_"
+        for i in self.indexes:
+            self.experiment_name += str(self.params_dict[i]) + "_"
 
         # experiment variables
         self.warmup_period = 3000
@@ -35,16 +48,19 @@ class ControlPanel(object):
 
         # shop layout
         self.order_pool = simpy.FilterStore(self.sim.env)
-        self.manufacturing_process_layout = ['WC1', 'WC2', 'WC3', 'WC4', 'WC5', 'WC6']
+        self.manufacturing_process_layout = []
+        self.m = self.params_dict["m_machines"]
+        for i in range(1, self.m+1):
+            self.manufacturing_process_layout.append(f'WC{i}')
         self.manufacturing_process = dict()
         for _, work_centre in enumerate(self.manufacturing_process_layout):
             self.manufacturing_process[work_centre] = simpy.PriorityResource(self.sim.env, capacity=1)
 
         # customer enquiry management - Due Date determination
-        self.min_max_random_dd = [42, 42]  # Due Dates intervals
+        self.min_max_random_dd = [45, 75]  # Due Dates intervals
 
         # release control (immediate release is LUMS COR = False)
-        self.LUMS_COR = True
+        self.LUMS_COR = False
         self.workload_norm = 5.8
         self.periodic_release_period = 4.0
 
@@ -62,10 +78,15 @@ class ControlPanel(object):
             self.released_workload[work_centre] = 0
 
         # order arrival params
-        self.mean_time_between_arrival = 0.64815
         self.mean_process_time = 1
-        self.truncation_level = 4
-        self.general_flow_shop = False  # False is pure job shop
+        self.aimed_utilization = self.params_dict["utilization"]
+        mean_r = ((len(self.manufacturing_process_layout) + 1) / 2)
+        m = len(self.manufacturing_process_layout)
+        inter_arrival_time = (mean_r / m) * (1 / self.aimed_utilization)
+        self.mean_time_between_arrival = round(inter_arrival_time, 5)
+        print(self.mean_time_between_arrival)
+        self.process_time_distribution = '2_erlang' #'exponential' #
+        self.general_flow_shop = True  # False is pure job shop
 
         # dispatching
         """
@@ -94,7 +115,8 @@ class DataControl(object):
             "process_throughput_time",
             "lateness",
             "tardiness",
-            "tardy"
+            "tardy",
+            'operation_ttt'
         ]
 
         # other
@@ -143,20 +165,38 @@ class DataControl(object):
         number_of_machines_in_process = len(self.sim.control_panel.manufacturing_process_layout)
         df["utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
                              / self.sim.control_panel.run_time)
-        df["mean_throughput_time"] = df_run.loc[:, "throughput_time"].mean()
-        df["std_throughput_time"] = df_run.loc[:, "throughput_time"].std()
-        df["mean_pool_time"] = df_run.loc[:, "pool_time"].mean()
-        df["std_pool_time"] = df_run.loc[:, "pool_time"].std()
-        df["mean_process_throughput_time"] = df_run.loc[:, "process_throughput_time"].mean()
-        df["std_process_throughput_time"] = df_run.loc[:, "process_throughput_time"].std()
-        df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
-        df["std_lateness"] = df_run.loc[:, "lateness"].std()
-        df["mean_tardiness"] = df_run.loc[:, "tardiness"].mean()
-        df["std_tardiness"] = df_run.loc[:, "tardiness"].std()
-        df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
-        df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
+        df["mean_lt"] = df_run.loc[:, "throughput_time"].mean()
+        df["std_lt"] = df_run.loc[:, "throughput_time"].std()
 
-        df["LC_triggers"] = self.sim.data.continous_trigger
+        est_mean = self.sim.general_functions.get_mean_manufacturing_lead_time()
+        est_stddev_mm1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mm1()
+        est_stddev_mg1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mg1()
+        df["est_mean_lt"] = est_mean
+        df["est_std_lt_mm1"] = est_stddev_mm1
+        df["est_std_lt_mg1"] = est_stddev_mg1
+
+        df["gap_mean_lt"] = (df_run.loc[:, "throughput_time"].mean() - est_mean) / df_run.loc[:, "throughput_time"].mean()
+        df["gap_std_lt_mm1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mm1) / df_run.loc[:, "throughput_time"].std()
+        df["gap_std_lt_mg1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mg1) / df_run.loc[:, "throughput_time"].std()
+
+        df["mean_operation_ttt"] = df_run.loc[:, "operation_ttt"].mean()
+        df["std_operation_ttt"] = df_run.loc[:, "operation_ttt"].std()
+
+        df["aimed_utilization"] = self.sim.control_panel.aimed_utilization
+        df["machines_m"] = self.sim.control_panel.m
+
+        # df["mean_pool_time"] = df_run.loc[:, "pool_time"].mean()
+        #df["std_pool_time"] = df_run.loc[:, "pool_time"].std()
+        #df["mean_process_throughput_time"] = df_run.loc[:, "process_throughput_time"].mean()
+        #df["std_process_throughput_time"] = df_run.loc[:, "process_throughput_time"].std()
+        #df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
+        #df["std_lateness"] = df_run.loc[:, "lateness"].std()
+        #df["mean_tardiness"] = df_run.loc[:, "tardiness"].mean()
+        #df["std_tardiness"] = df_run.loc[:, "tardiness"].std()
+        #df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
+        #df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
+        #df["LC_triggers"] = self.sim.data.continous_trigger
+
 
         # save data from the run to experiment dataframe
         if self.experiment_database is None:
@@ -173,6 +213,7 @@ class DataControl(object):
         file = self._get_directory() + self.sim.control_panel.experiment_name + '.csv'
         self.experiment_database.to_csv(file, index=False)
         if self.sim.control_panel.print_info:
+            print("\n")
             print(f"data saved at: {file}")
         return
 
@@ -226,17 +267,82 @@ class GeneralFunctions(object):
                     self.random_generator.expovariate(mean_process_time_adj)
         return value
 
+    def two_erlang(self, mean):
+        """
+        two erlang distribution
+        :param mean_process_time:
+        :return: value
+        """
+        return self.random_generator.expovariate(mean*2) + self.random_generator.expovariate(mean*2)
+
+    def exponential(self, mean):
+        """
+        two erlang distribution
+        :param mean_process_time:
+        :return: value
+        """
+        return self.random_generator.expovariate(mean)
+
     def random_due_date(self):
         """
         random due date assignment
         :return: value
         """
-        """
         return self.sim.env.now + self.random_generator.uniform(self.sim.control_panel.min_max_random_dd[0],
                                                                 self.sim.control_panel.min_max_random_dd[1]
                                                                 )
-        """
-        return self.sim.env.now + self.sim.control_panel.min_max_random_dd[0]
+
+    def get_mean_q(self):
+        mean_p = self.sim.control_panel.mean_process_time
+        rho = self.sim.control_panel.aimed_utilization
+        cv_a = 1
+        if self.sim.control_panel.process_time_distribution == '2_erlang':
+            cv_p = 0.5
+        elif self.sim.control_panel.process_time_distribution == 'exponential':
+            cv_p = 1
+        else:
+            raise Exception('cannot set queue for the given process time distribution')
+        return mean_p * rho / (1 - rho) * (cv_a ** 2 + cv_p ** 2) / 2
+
+    def get_mean_manufacturing_lead_time(self):
+        mean_r = (len(self.sim.control_panel.manufacturing_process_layout) + 1) / 2
+        mean_p = self.sim.control_panel.mean_process_time
+        mean_q = self.get_mean_q()
+        return mean_r * (mean_p + mean_q)
+
+    def get_std_dev_manufacturing_lead_time_mm1(self):
+        mean_p = self.sim.control_panel.mean_process_time
+        rho = self.sim.control_panel.aimed_utilization
+        mean_a = mean_p / rho
+        # compute variance mm1 queue
+        v_mm1 = 1/(mean_p - mean_a)**2
+
+        # routing distribution params
+        nr_of_routing = len(self.sim.control_panel.manufacturing_process_layout)
+        prob_routing_j = 1 / nr_of_routing
+
+        # assume independent variances
+        result = 0
+        for j, _ in enumerate(self.sim.control_panel.manufacturing_process_layout):
+            result += (j + 1) * v_mm1
+        return math.sqrt(prob_routing_j * result)
+
+    def get_std_dev_manufacturing_lead_time_mg1(self):
+        mean_p = self.sim.control_panel.mean_process_time
+        rho = self.sim.control_panel.aimed_utilization
+        mean_a = mean_p / rho
+        mean_q = self.get_mean_q()
+        # compute variance mm1 queue
+        v_mg1 = mean_q**2 + (mean_a * (2/math.sqrt(2)))/(3*(1-rho))
+        v = 0.5 ** 2 + v_mg1
+        # routing distribution params
+        nr_of_routing = len(self.sim.control_panel.manufacturing_process_layout)
+        prob_routing_j = 1 / nr_of_routing
+        # assume independent variances
+        result = 0
+        for j, _ in enumerate(self.sim.control_panel.manufacturing_process_layout):
+            result += (j + 1) * math.sqrt(nr_of_routing) * v
+        return math.sqrt(prob_routing_j * result)
 
 
 class Order(object):
@@ -262,17 +368,24 @@ class Order(object):
         self.finishing_time = 0
 
         # process params
-        self.routing_sequence = random.sample(self.sim.control_panel.manufacturing_process_layout, random.randint(1, 6))
+        self.routing_sequence = random.sample(self.sim.control_panel.manufacturing_process_layout, random.randint(1, self.sim.control_panel.m))
         if self.sim.control_panel.general_flow_shop:
             self.routing_sequence.sort()  # GFS
 
         self.process_time = {}
         for work_centre in self.routing_sequence:
-            self.process_time[work_centre] = \
-                self.sim.general_functions.two_erlang_truncated(
-                    mean_process_time=self.sim.control_panel.mean_process_time,
-                    truncation=self.sim.control_panel.truncation_level
-                    )
+            if self.sim.control_panel.process_time_distribution == '2_erlang':
+                self.process_time[work_centre] = \
+                    self.sim.general_functions.two_erlang(
+                        mean=self.sim.control_panel.mean_process_time
+                        )
+            elif self.sim.control_panel.process_time_distribution == 'exponential':
+                self.process_time[work_centre] = \
+                    self.sim.general_functions.exponential(
+                        mean=self.sim.control_panel.mean_process_time
+                        )
+            else:
+                raise Exception("no valid process time distribution selected")
         if self.sim.control_panel.dispatching_rule == "ODD":
             self.operational_due_dates = {}
 
@@ -307,7 +420,7 @@ class Process(object):
             order.identifier = i
             order.name = ('Job%07d' % i)
             # send order to release process
-            self.sim.release_control.order_pool(order=order)
+            self.sim.env.process(self.sim.process.manufacturing_process(order=order))
             # get next arrival time and wait
             t = self.random_generator.expovariate(1 / self.mean_time_between_arrivals)
             yield self.sim.env.timeout(t)
@@ -361,8 +474,6 @@ class Process(object):
             # order is finished, start processing
             order.requested_work_centre.release(req)
             self.sim.data.accumulated_process_time += order.process_time[work_centre]
-            # Provide feedback for the continuous release mechanism of LUMS COR
-            self.sim.release_control.finished_load(order=order, work_center=work_centre)
             # loop to next work centre or end processing
 
         # order finished processing, collect data
@@ -394,12 +505,13 @@ class Process(object):
 
         # put all the order performance metrics into list
         df_list.append(order.identifier)
-        df_list.append(order.finishing_time - order.material_arrival_time)
+        df_list.append(order.finishing_time - order.entry_time)
         df_list.append(order.pool_time)
         df_list.append(order.finishing_time - order.release_time)
         df_list.append(order.finishing_time - order.due_date)
         df_list.append(max(0, (order.finishing_time - order.due_date)))
         df_list.append(max(0, self._heavenside(x=(order.finishing_time - order.due_date))))
+        df_list.append((order.finishing_time - order.entry_time)/len(order.routing_sequence))
 
         # save list
         self.sim.data.append_run_list(result_list=df_list)
@@ -410,156 +522,6 @@ class Process(object):
             return 1
         return -1
 
-
-class ReleaseControl(object):
-    def __init__(self, simulation):
-        self.sim = simulation
-
-        # set seeds for common random numbers
-        self.random_generator = random.Random()
-        self.random_generator.seed(999999)
-
-    def order_pool(self, order):
-        """
-        the the pool with flow items before the process
-        :param order: order object found in order.py
-        :return: void
-        """
-        seq_priority = order.periodic_release_date
-        # put each job in the pool
-        job = [order, seq_priority, 1]
-        self.sim.control_panel.order_pool.put(job)
-        # release mechanisms
-        if self.sim.control_panel.LUMS_COR:
-            # feedback mechanism for continuous release
-            work_center = order.routing_sequence[0]
-            if self.control_work_centre_empty(work_center=work_center):
-                order.process = self.sim.env.process(
-                    self.sim.release_control.continuous_trigger(work_center=work_center))
-        else:
-            # immediate release method
-            self.sim.env.process(self.sim.process.manufacturing_process(order=order))
-        return
-
-    def control_work_centre_empty(self, work_center):
-        """
-        controls if the queue is empty
-        :param: work_center:
-        :return: bool
-        """
-        in_the_workcentre = len(self.sim.control_panel.manufacturing_process[work_center].queue) + \
-                            len(self.sim.control_panel.manufacturing_process[work_center].users)
-        return in_the_workcentre == 0
-
-    def remove_from_pool(self, release_now):
-        """
-        remove flow item from the pool
-        :param release_now: list with parameters of the flow item
-        :return: void
-        """
-        # create a variable that is equal to a item that is removed from the pool
-        release_now[2] = 0
-        # sort the queue
-        self.sim.control_panel.order_pool.items.sort(key=itemgetter(2))
-        # remove flow item from pool
-        self.sim.control_panel.order_pool.get()
-
-    def periodic_release(self):
-        """
-        Workload Control Periodic release using aggregate load. See workings in Land 2004.
-        :return: void
-        """
-        periodic_interval = self.sim.control_panel.periodic_release_period
-        while True:
-            yield self.sim.env.timeout(periodic_interval)
-            # reset the list of released orders
-            release_now = []
-            # sequence the orders currently in the pool
-            self.sim.control_panel.order_pool.items.sort(key=itemgetter(1))
-            # contribute the load from each item in the pool
-            for _, order_list in enumerate(self.sim.control_panel.order_pool.items):
-                order = order_list[0]
-                # contribute the corrected aggregate load from for each workstation (Oosterman et al., 2000)
-                for WC in order.routing_sequence:
-                    self.sim.control_panel.released_workload[WC] += order.process_time[WC] / (
-                                order.routing_sequence.index(WC) + 1)
-                order.release = True
-                # the new load situation is compared to the norm
-                for WC in order.routing_sequence:
-                    if self.sim.control_panel.released_workload[WC] - self.sim.control_panel.processed_workload[WC] \
-                            > self.sim.control_panel.workload_norm:
-                        order.release = False
-                # if a norm has been violated the job is not released and the contributed load set back
-                if not order.release:
-                    for WC in order.routing_sequence:
-                        self.sim.control_panel.released_workload[WC] -= order.process_time[WC] / (
-                                order.routing_sequence.index(WC) + 1)
-                # the released orders are collected into a list for release
-                if order.release:
-                    # orders for released are collected into a list
-                    release_now.append(order_list)
-                    # the orders are send to the process
-                    self.sim.env.process(self.sim.process.manufacturing_process(order=order))
-            # the released orders are removed from the pool using the remove from pool method
-            for _, jobs in enumerate(release_now):
-                self.sim.release_control.remove_from_pool(release_now=jobs)
-
-    def continuous_trigger(self, work_center):
-        """
-        Workload Control: continuous release using aggregate load. See workings in Thürer et al, 2012.
-        Part of LUMS COR
-        :return: void
-        """
-        while True:
-            # empty the release list
-            trigger = 1
-            # sort orders in the pool
-            self.sim.control_panel.order_pool.items.sort(key=itemgetter(1))
-            # control if there is any order available for the starving work centre from all items in the pool
-            for _, order_list in enumerate(self.sim.control_panel.order_pool.items):
-                order = order_list[0]
-                # if there is an order available, than it can be released
-                if order.routing_sequence[0] == work_center and trigger == 1:
-                    trigger += 1
-                    # contribute the load to the workload measures
-                    for WC in order.routing_sequence:
-                        self.sim.control_panel.released_workload[WC] += order.process_time[WC] / (
-                                order.routing_sequence.index(WC) + 1)
-                        order.release = True
-                        # if an order turned out to be released, it is send to be removed from the pool
-                    if order.release:
-                        self.sim.data.continous_trigger += 1
-                        # send the order to the starting work centre
-                        self.sim.env.process(self.sim.process.manufacturing_process(order=order))
-                        # release order from the pool
-                        self.sim.release_control.remove_from_pool(release_now=order_list)
-            return
-            yield
-
-    def continuous_trigger_activation(self, work_center):
-        """
-        feedback mechanism for continuous release
-        :param work_center
-        :return: void
-        """
-        # control the if the the amount of orders in or before the work centre is equal or less than one
-        if self.control_work_centre_empty(work_center=work_center):
-            self.sim.env.process(self.sim.release_control.continuous_trigger(work_center=work_center))
-
-    def finished_load(self, order, work_center):
-        """
-        add the processed load and trigger continuous release if required.
-        :param order:
-        :param work_center:
-        :return: void
-        """
-        if self.sim.control_panel.LUMS_COR:
-            self.sim.control_panel.processed_workload[work_center] += order.process_time[work_center] / (
-                    order.routing_sequence.index(work_center) + 1)
-            self.sim.release_control.continuous_trigger_activation(work_center=work_center)
-        return
-
-
 class SimulationModel(object):
     """
     Class containing the simulation model function the simulation instance (i.e. self) is passed in the other
@@ -568,17 +530,16 @@ class SimulationModel(object):
         Environment:        Class from Simpy which allows to control the simulation generator functions.
         GeneralFunctions:   Class with various functions, i.e. a toolbox.
         Data:               Class with all the methods required to transform, store and manipulate all data
-        ReleaseControl:     Class with all the tools needed to perform release control. Currently only periodic
-                            and LUMS COR.
         Process:            Class with the simulation source and the manufacturing process.
     """
 
-    def __init__(self):
+    def __init__(self, exp_number=1):
         """
         load all required classes to complete the model and the settings
         """
         # setup general params
         self.warm_up = True
+        self.exp_number = exp_number
 
         # set seed for common random numbers
         self.random_generator = random.Random()
@@ -591,22 +552,18 @@ class SimulationModel(object):
         self.general_functions = GeneralFunctions(simulation=self)
 
         # get the model and policy control panel
-        self.control_panel = ControlPanel(simulation=self)
+        self.control_panel = ControlPanel(simulation=self, exp_number=exp_number)
         self.print_info = self.control_panel.print_info
 
         # get the data storage variables
         self.data = DataControl(simulation=self)
 
-        # import release control
-        self.release_control = ReleaseControl(simulation=self)
-
         # import process
         self.process: Process = Process(simulation=self)
 
         # declare variables
-        self.release_periodic = "to_declare"
-        self.source_process = "to_declare"
-        self.run_manager = "to_declare"
+        self.source_process = None
+        self.run_manager = None
 
     # the actual simulation function with all required SimPy settings---------------------------------------------------
     def sim_function(self):
@@ -614,19 +571,12 @@ class SimulationModel(object):
         initialling and timing of the generator functions
         :return: void
         """
-        # activate release control
-        if self.control_panel.LUMS_COR:
-            self.release_periodic = self.env.process(self.release_control.periodic_release())
 
         # initialize processes
         self.source_process = self.env.process(self.process.generate_random_arrivals())
 
         # activate data collection methods
         self.run_manager = self.env.process(SimulationModel.run_manager(self))
-
-        # set the the length of the simulation (add one extra time unit to save result last run)
-        if self.print_info:
-            self._print_start_info()
 
         # start simulation
         sim_time = (self.control_panel.warmup_period + self.control_panel.run_time) * \
@@ -640,7 +590,6 @@ class SimulationModel(object):
             print(f"\nMean results of experiment:")
             print(self.data.experiment_database.describe().loc[['mean']].to_string(index=False))
             print("\n")
-            self._print_end_info()
 
     def run_manager(self):
         """
@@ -653,10 +602,6 @@ class SimulationModel(object):
             yield self.env.timeout(self.control_panel.warmup_period)
             # chance the warm_up status
             self.warm_up = True
-
-            # print run info if required
-            if self.print_info:
-                self._print_warmup_info()
 
             # update data
             self.data.run_update(warmup=self.warm_up)
@@ -672,39 +617,18 @@ class SimulationModel(object):
             if self.print_info:
                 self._print_run_info()
 
-    def _print_start_info(self):
-        print("Simulation starts")
-        return
-
-
-    def _print_warmup_info(self):
-        return print('Warm-up period finished')
-
     def _print_run_info(self):
         # vital simulation results are given
         run_number = int(self.env.now / (self.control_panel.warmup_period + self.control_panel.run_time))
         index = run_number - 1
-
-        # make progress bar
-        delta = 100
-        progress = "["
-        step = delta / self.control_panel.number_of_runs
-
-        for i in range(1, 101):
-            if run_number * step > i:
-                progress = progress + "="
-            elif run_number * step == i:
-                progress = progress + ">"
-            else:
-                progress = progress + "."
-        progress = progress + f"] {round(run_number / self.control_panel.number_of_runs * 100, 2)}%"
-        print(f"run number {run_number}", progress)
         # print info
-        print(self.data.experiment_database.iloc[index:, ].to_string(index=False))
-        return
-
-    def _print_end_info(self):
-        print("Simulation ends")
+        try:
+            if index == 0:
+                print(self.data.experiment_database.iloc[index:, ].to_string(index=False), end='\n')
+            else:
+                print('\n'.join(self.data.experiment_database.iloc[index:, ].to_string(index=False).split('\n')[1:]), end='\n')
+        except (KeyError, IndexError):
+            print("could not print simulation results")
         return
 
 

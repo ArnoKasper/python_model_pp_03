@@ -79,7 +79,7 @@ class Inventory(object):
 
     def inventory_availability_check(self, material, amount, fill_rate_check):
         # set rationing threshold
-        if self.material_allocation == 'rationing' and not fill_rate_check:
+        if self.material_allocation == 'HB' and not fill_rate_check:
             threshold = self.sim.policy_panel.rationing_threshold
         else:
             threshold = 0
@@ -103,9 +103,9 @@ class Inventory(object):
             # check availability for each item
             for material in requirements:
                 # allocate material based on allocation policy
-                if self.material_allocation == 'rationing' and not fill_rate_check:
+                if self.material_allocation == 'HB' and not fill_rate_check:
                     inventory_level = self.material_sequence[material][order.identifier]
-                elif self.material_allocation == 'availability':
+                elif self.material_allocation == 'NHB':
                     if self.sim.model_panel.material_request == 'variable_replace':
                         # correct for lumpiness in demand
                         inventory_level = len([om for om in order.requirements if om == material])

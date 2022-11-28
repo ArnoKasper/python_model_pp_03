@@ -38,9 +38,9 @@ class Generation(object):
 
     def generate_control_loop(self, item_type, warmup=False):
         if self.sim.generation_process[item_type] == 'BSS':
-            on_hand_inventory = self.sim.inventory.on_hand_inventory[item_type]
-            in_process = self.generation_attributes[item_type]['generated'] - self.generation_attributes[item_type]['delivered']
-            in_pipeline = in_process - on_hand_inventory
+            on_hand_k = self.sim.inventory.on_hand_inventory[item_type]
+            in_process_k = self.generation_attributes[item_type]['generated'] - self.generation_attributes[item_type]['delivered']
+            on_order_k = in_process_k - on_hand_k
             # determine how material reorder policy
             if self.sim.policy_panel.reorder_moment == "arrival":
                 material_needs = self.sim.release.material_needs()
@@ -51,7 +51,7 @@ class Generation(object):
                 raise Exception(f"material reorder policy unknown")
 
             # control if loop allows new generation
-            if (in_pipeline + in_process - pool_correction) < self.sim.policy_panel.reorder_level + 1:
+            if (on_hand_k + on_order_k - pool_correction) < self.sim.policy_panel.reorder_level + 1:
                 if self.sim.model_panel.DELIVERY == "supplier":
                     if not warmup:
                         # send a replenishment order ot the supplier

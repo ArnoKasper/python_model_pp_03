@@ -61,7 +61,7 @@ class Release(object):
         # update order priority
         self.set_pool_priority(order=order)
         # set rationing rule
-        if self.sim.policy_panel.material_allocation == 'rationing':
+        if self.sim.policy_panel.material_allocation == 'HB':
             self.set_material_priority(order=order)
         # put order in pool
         pool_item = self.pool_item(order=order)
@@ -102,7 +102,7 @@ class Release(object):
             order.material_priority = order.due_date
         elif self.sim.policy_panel.rationing_rule == "PRD":
             r = len(order.routing_sequence)
-            order.material_priority = order.due_date - r * 5.625
+            order.material_priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
         else:
             raise Exception('no valid rationing rule selected')
 
@@ -116,6 +116,9 @@ class Release(object):
             order.pool_priority = order.arrival_time
         elif self.sim.policy_panel.sequencing_rule == "EDD":
             order.pool_priority = order.due_date
+        elif self.sim.policy_panel.sequencing_rule == "PRD":
+            r = len(order.routing_sequence)
+            order.material_priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
         else:
             raise Exception('no valid pool sequencing rule selected')
         return
@@ -146,7 +149,7 @@ class Release(object):
         find which orders have can be made as material is available, and turn the pool
         """
         # update rationing sequence, if applicable
-        if self.sim.policy_panel.material_allocation == 'rationing':
+        if self.sim.policy_panel.material_allocation == 'HB':
             self.sim.inventory.rationing_sequence_update()
         # setup params
         release_list = list()

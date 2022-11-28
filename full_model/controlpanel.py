@@ -20,12 +20,13 @@ class ModelPanel(object):
         self.names_variables = ["name",
                                 'release_technique',
                                 "material_complexity",
-                                "routing_configuration",
-                                "reorder_level",
-                                "mean_replenishment_time",
+                                "material_replenishment",
                                 "material_allocation",
                                 "release_target",
-                                'disruption'
+                                "holding_cost",
+                                "WIP_cost",
+                                "earliness_cost",
+                                "tardiness_cost"
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -35,11 +36,11 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 150  # number of replications
+        self.NUMBER_OF_RUNS: int = 5  # 150  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
-                                'routing_configuration': self.params_dict["routing_configuration"]
+                                'routing_configuration': "GFS"
                                 }
         # manufacturing system
         self.MANUFACTURING_FLOOR_LAYOUT: List[str, ...] = []
@@ -102,7 +103,7 @@ class ModelPanel(object):
         self.material_types = ['A', 'B', 'C', 'D', 'E']
         self.material_requirements_distribution = 'uniform'
         self.material_quantity = self.params_dict["material_complexity_dict"]["material_quantity"]
-        self.material_quantity_range = [*range(1, len(self.material_types)+1)]
+        self.material_quantity_range = [*range(1, len(self.material_types) + 1)]
         self.material_request = self.params_dict["material_complexity_dict"]["material_request"]
 
         self.order_attributes = {"name": "customized",
@@ -114,7 +115,7 @@ class ModelPanel(object):
         # materials
         self.SKU: Dict[...] = {}
         self.materials = {}
-        self.expected_replenishment_time = self.params_dict["mean_replenishment_time"]
+        self.expected_replenishment_time = 50
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
@@ -131,16 +132,25 @@ class ModelPanel(object):
         supply distributions
             - constant
             - exponential
+            - normal
+                - need to define sigma
             - k_erlang
                 need to define k
         """
         self.DELIVERY = "supplier"  # "immediate"
-        self.SUPPLY_DISTRIBUTION = 'k_erlang'
+        self.SUPPLY_DISTRIBUTION = 'normal'
         self.supply_k = 2
+        self.supply_sigma = 10
         # disruption
-        self.DISRUPTION = self.params_dict["disruption"]
+        self.DISRUPTION = False
         self.disruption_severity = 1
         self.disruption_duration = 500
+
+        # costs
+        self.holding_cost = self.params_dict["holding_cost"]
+        self.WIP_cost = self.params_dict["WIP_cost"]
+        self.earliness_cost = self.params_dict["earliness_cost"]
+        self.tardiness_cost = self.params_dict["tardiness_cost"]
         return
 
 
@@ -169,7 +179,10 @@ class PolicyPanel(object):
         types of generation techniques
             - BSS (base-stock system)
         """
-        self.reorder_level = self.params_dict['reorder_level']
+        self.material_replenishment = self.params_dict['material_replenishment']
+        self.reorder_level = self.sim.general_functions.reorder_point(replenishment_type=self.material_replenishment,
+                                                                      a_min_max=self.DD_random_min_max)
+        print(self.reorder_level)
         self.generated = {}
         self.delivered = {}
         self.generation_technique = {}
@@ -230,9 +243,12 @@ class PolicyPanel(object):
         self.release_target = self.params_dict['release_target']
 
         # pool rule
-        self.sequencing_rule = 'EDD'
+        self.sequencing_rule = 'PRD'
         self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES[self.sequencing_rule].copy()
-
+        # set queueing estimate
+        mean_p = self.sim.model_panel.MEAN_PROCESS_TIME
+        mean_q = self.sim.general_functions.get_mean_q()
+        self.sequencing_rule_attributes['PRD_k'] = mean_p + mean_q
         # dispatching
         """
         dispatching rules available
@@ -245,13 +261,13 @@ class PolicyPanel(object):
             - FOCUS, following Kasper et al. (2023)
         """
         self.dispatching_mode = "priority_rule"
-        self.dispatching_rule = 'FCFS' # 'EDD' # "FISFO"
+        self.dispatching_rule = 'FCFS'  # 'EDD' # "FISFO"
 
         # material allocation
         """
         material allocation
-            - availability
-            - rationing
+            - NHB --> No Hold Back
+            - HB --> Hold Back 
                 - requires a rationing rule
                     - FCFS
                     - SPT
@@ -260,7 +276,7 @@ class PolicyPanel(object):
                     - PRD
                 - requires a rationing threshold => 0 
         """
-        self.material_allocation = self.params_dict['material_allocation'] # 'availability'
+        self.material_allocation = self.params_dict['material_allocation']  # 'availability'
         self.rationing_rule = 'PRD'
         self.rationing_threshold = 0
         return
@@ -321,7 +337,7 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
 
 POOL_RULE_ATTRIBUTES = {
     'FCFS': {},
-    'PRD': {'PRD_k': 4},
+    'PRD': {'PRD_k': 6.625},
     'FISFO': {},
     'EDD': {},
     'CPRD': {},
