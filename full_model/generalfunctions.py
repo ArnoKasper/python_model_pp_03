@@ -11,8 +11,11 @@ class GeneralFunctions(object):
         return
 
     @staticmethod
-    def arrival_time_calculator(wc_and_flow_config, manufacturing_floor_layout, aimed_utilization,
-                                mean_process_time, number_of_machines):
+    def arrival_time_calculator(wc_and_flow_config,
+                                manufacturing_floor_layout,
+                                aimed_utilization,
+                                mean_process_time,
+                                number_of_machines):
         """
         compute the inter arrival time
         :param wc_and_flow_config: the configuration
@@ -148,11 +151,11 @@ class GeneralFunctions(object):
         v_mg1 = mean_q**2 + (mean_a * (2/math.sqrt(2)))/(3*(1-rho))
         v = 0.5 ** 2 + v_mg1
         # routing distribution params
-        nr_of_routing = len(self.sim.control_panel.manufacturing_process_layout)
+        nr_of_routing = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
         prob_routing_j = 1 / nr_of_routing
         # assume independent variances
         result = 0
-        for j, _ in enumerate(self.sim.control_panel.manufacturing_process_layout):
+        for j, _ in enumerate(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT):
             result += (j + 1) * math.sqrt(nr_of_routing) * v
         return math.sqrt(prob_routing_j * result)
 
