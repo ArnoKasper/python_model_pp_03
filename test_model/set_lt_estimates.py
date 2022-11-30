@@ -30,7 +30,8 @@ class ControlPanel(object):
         self.sim = simulation
         experimental_params_dict = parameters.get_interactions()
         self.params_dict = experimental_params_dict[self.experiment_number]
-        self.print_info = True
+        self.print_info = False
+        self.print_final_info = True
 
         # set experiment name
         self.names_variables = ["utilization",
@@ -84,7 +85,7 @@ class ControlPanel(object):
         m = len(self.manufacturing_process_layout)
         inter_arrival_time = (mean_r / m) * (1 / self.aimed_utilization)
         self.mean_time_between_arrival = round(inter_arrival_time, 5)
-        print(self.mean_time_between_arrival)
+        # print(self.mean_time_between_arrival)
         self.process_time_distribution = '2_erlang' #'exponential' #
         self.general_flow_shop = True  # False is pure job shop
 
@@ -228,6 +229,8 @@ class DataControl(object):
         #   peregrine
         elif machine_name[0:7] == "pg-node":
             path = "/data/s3178471/"
+        elif machine_name == "WKS052605":
+            path = "C:/Users/P288125/Dropbox/Professioneel/Research/pp_03_entropy_balance/data/estimates/experiments_1/"
         else:
             warnings.warn(f"{machine_name} is an unknown CPU name ", Warning)
             path = os.path.abspath(os.getcwd())
@@ -586,10 +589,10 @@ class SimulationModel(object):
         # simulation finished: save database and print final info
         self.data.save_dataset()
 
-        if self.print_info:
-            print(f"\nMean results of experiment:")
+        if self.control_panel.print_final_info:
+            #print(f"\nMean results of experiment:")
             print(self.data.experiment_database.describe().loc[['mean']].to_string(index=False))
-            print("\n")
+            #print("\n")
 
     def run_manager(self):
         """
