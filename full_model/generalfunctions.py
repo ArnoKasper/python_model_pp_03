@@ -168,14 +168,15 @@ class GeneralFunctions(object):
         delta = mean_material_quantity * (arrival_rate/m)
         return mean_ell * delta
 
-    def get_std_dev_demand_during_replenishment(self):
+    def get_std_dev_demand_during_replenishment(self, replenishment_type, a_min_max):
+        beta = self.beta(replenishment_type=replenishment_type, a_min_max=a_min_max)
         theta = self.get_mean_demand_during_replenishment()
         std_dev_repl = self.sim.model_panel.supply_sigma
         mean_material_quantity = self.sim.model_panel.material_quantity
         m = len(self.sim.model_panel.material_types)
         arrival_rate = 1/self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
         delta = mean_material_quantity * (arrival_rate / m)
-        return math.sqrt(theta + delta**2 * std_dev_repl**2)
+        return math.sqrt(theta - beta + delta**2 * std_dev_repl**2)
 
     def z_score(self, prob):
         return st.norm.ppf(prob)
@@ -189,7 +190,7 @@ class GeneralFunctions(object):
         z = self.z_score(prob=F_t)
         return mean + z * stddev
 
-    def reorder_point(self, replenishment_type, a_min_max):
+    def beta(self, replenishment_type, a_min_max):
         if replenishment_type == 'hierarchical':
             # hierarchical
             beta = 0
@@ -205,14 +206,22 @@ class GeneralFunctions(object):
             beta = (mean_A - L) * delta
         else:
             raise Exception(f'cannot beta for the given replenishment type {replenishment_type}')
+        return beta
+
+    def reorder_point(self, replenishment_type, a_min_max):
         # determine the reorder point
         c_h = self.sim.model_panel.holding_cost
         c_w = self.sim.model_panel.WIP_cost
         F_s = c_w/(c_w+c_h)
         # get mean and stddev
-        mean = self.get_mean_demand_during_replenishment()
-        stddev = self.get_std_dev_demand_during_replenishment()
+        beta = self.beta(replenishment_type=replenishment_type, a_min_max=a_min_max)
+        theta = self.get_mean_demand_during_replenishment()
+        stddev = self.get_std_dev_demand_during_replenishment(replenishment_type=replenishment_type,
+                                                              a_min_max=a_min_max
+                                                              )
         z = self.z_score(prob=F_s)
         # compute stock level, assume round up
-        stock_level = int(mean - beta + z * stddev) + 1
-        return stock_level - 1
+        stock_level = int(theta - beta + z * stddev) + 1
+        reorder_point = stock_level - 1
+        return reorder_point
+

@@ -5,27 +5,22 @@ Version: 1.1.0
 """
 
 material_complexity = ['low', 'moderate', 'high']
-DRACO_WIP_target = [15, 25]
+DRACO_WIP_target = [20, 25]
 CONWIP_WIP_target = [42, 47]
-disruptions = [True, False]
-
-material_allocation = ['availability', 'rationing']
-
+material_allocation = ['NHB', 'HB']
 release_technique = ["DRACO", 'CONWIP', "IMM"]
-
-
-reorder_level_dict = {'10': [23, 24, 27],
-                      '50': {'low': [32, 35, 38], 'moderate': [102, 105, 110], 'high': [102, 105, 110]},
-                      '100': [200, 210, 220]
-                      }
-
-shop_complexity_dict = {'low': {'work_centres': 6, "routing_configuration": "GFS"},
-                        'moderate': {'work_centres': 6, "routing_configuration": "PJS"}}
-
 material_complexity_dict = {'low': {'material_quantity': 1, "material_request": "constant"},
                             'moderate': {'material_quantity': 3, "material_request": "constant"},
                             'high': {'material_quantity': 3, "material_request": "variable"}}
 experimental_params_dict = []
+
+cost_ratios_dict = {'base': {'holding_cost': 0.1, 'WIP_cost': 2, 'earliness_cost': 0.5,'tardiness_cost': 5},
+                    'low_low': {'holding_cost': 0.1, 'WIP_cost': 1, 'earliness_cost': 0.5,'tardiness_cost': 3},
+                    'high_low': {'holding_cost': 0.1, 'WIP_cost': 3, 'earliness_cost': 0.5,'tardiness_cost': 3},
+                    'low_high': {'holding_cost': 0.1, 'WIP_cost': 1, 'earliness_cost': 0.5,'tardiness_cost': 7},
+                    'high_high': {'holding_cost': 0.1, 'WIP_cost': 3, 'earliness_cost': 0.5,'tardiness_cost': 7}
+                    }
+
 
 def get_interactions():
     """
@@ -93,12 +88,12 @@ def get_interactions():
     """
     params_dict = dict()
     params_dict["name"] = "IMM"
-    params_dict["release_technique"] = "DRACO"
+    params_dict["release_technique"] = "immediate"
     params_dict["material_complexity"] = "high"
     params_dict["material_complexity_dict"] = material_complexity_dict["high"]
-    params_dict["material_allocation"] = 'NHB' # "NHB" #
-    params_dict["material_replenishment"] = 'intergral' # 'hierarchical' #
-    params_dict["release_target"] = 25
+    params_dict["material_allocation"] = 'HB' # "NHB" #
+    params_dict["material_replenishment"] = 'hierarchical' # 'intergral' #
+    params_dict["release_target"] = 20
     params_dict["holding_cost"] = 0.1
     params_dict["WIP_cost"] = 1
     params_dict["earliness_cost"] = 0.5
