@@ -103,6 +103,10 @@ class DataCollection(object):
         df_exp_interactions = self.add_experiment_variables()
         df = pd.concat([df, df_exp_interactions], axis=1)
 
+        # add key information
+        df['reorder_point'] = self.sim.policy_panel.reorder_level
+        df['planned_lead_time'] = self.sim.general_functions.planned_manufacturing_lead_time()
+
         # save data from the run
         if self.experiment_database is None:
             self.experiment_database = df

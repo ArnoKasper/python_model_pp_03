@@ -23,6 +23,7 @@ class ModelPanel(object):
                                 "material_replenishment",
                                 "material_allocation",
                                 "release_target",
+                                "cost_ratio",
                                 "holding_cost",
                                 "WIP_cost",
                                 "earliness_cost",
@@ -36,7 +37,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 5  # 150  # number of replications
+        self.NUMBER_OF_RUNS: int = 150  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -337,7 +338,7 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
 
 POOL_RULE_ATTRIBUTES = {
     'FCFS': {},
-    'PRD': {'PRD_k': 6.625},
+    'PRD': {'PRD_k': None},
     'FISFO': {},
     'EDD': {},
     'CPRD': {},
