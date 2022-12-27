@@ -27,7 +27,7 @@ cost_ratios_dict = {'base': {'holding_cost': 0.1, 'WIP_cost': 2, 'earliness_cost
 experimental_params_dict = []
 
 def get_interactions():
-    #"""
+    # """
     # IMM
     for m_complexity in material_complexity:
         for mat_all in material_allocation:
@@ -98,6 +98,7 @@ def get_interactions():
     params_dict["material_allocation"] = 'HB' # "NHB" #
     params_dict["material_replenishment"] = 'hierarchical' # 'intergral' #
     params_dict["release_target"] = 20
+    params_dict["cost_ratio"] = "test"
     params_dict["holding_cost"] = 0.1
     params_dict["WIP_cost"] = 1
     params_dict["earliness_cost"] = 0.5

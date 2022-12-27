@@ -418,7 +418,8 @@ class Release(object):
         pool_list = self.sim.model_panel.POOLS.items
         for pool_item in pool_list:
             order = pool_item[self.index_order_object]
-            material_needs[order.requirements[0]] += 1
+            for requirement in order.requirements:
+                material_needs[requirement] += 1
         return material_needs
 
     def material_planned_release_date(self, order):
