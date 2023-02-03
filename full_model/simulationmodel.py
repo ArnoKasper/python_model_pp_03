@@ -122,6 +122,8 @@ class SimulationModel(object):
             self.warm_up = True
             # update data
             self.data.run_update(warmup=self.warm_up)
+            if self.model_panel.data_collection == 'periodic':
+                self.env.process(self.data.periodic_data_collection())
             yield self.env.timeout(self.model_panel.RUN_TIME)
             # chance the warm_up status
             self.warm_up = False
@@ -139,7 +141,7 @@ class SimulationModel(object):
         # statistics
         try:
             statistics = self.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')
-        except (NameError, KeyError):
+        except (NameError, KeyError, AttributeError):
             statistics = 'could not compute statistics'
         # print info
         try:
@@ -151,7 +153,7 @@ class SimulationModel(object):
                 print('\n'.join(self.data.experiment_database.iloc[index:, ].to_string(
                     index=False).split('\n')[1:]), end=' ')
                 print(statistics)
-        except (KeyError, IndexError):
+        except (KeyError, IndexError, AttributeError):
             print("could not print simulation results")
         return
 

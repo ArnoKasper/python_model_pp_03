@@ -535,5 +535,13 @@ class SystemStateDispatching(object):
         del self.order_book[order.identifier]
         return
 
+    def get_wip(self):
+        wip = 0
+        for _, order in self.order_book.items():
+            # control if the order is released
+            if order.release:
+                wip += 1
+        return wip
+
     def __str__(self):
         return "DRACO"

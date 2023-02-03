@@ -12,6 +12,7 @@ class DataCollection(object):
 
         self.experiment_database = None
         self.order_list = list()
+        self.periodic_data = list()
 
         # columns names
         self.columns_names_run = [
@@ -38,7 +39,8 @@ class DataCollection(object):
         :param result_list:
         :return: void
         """
-        self.order_list.append(result_list)
+        if self.sim.model_panel.data_collection == 'main':
+            self.order_list.append(result_list)
         return
 
     def run_update(self, warmup):
@@ -49,7 +51,12 @@ class DataCollection(object):
         """
         if not warmup:
             # update database
-            self.store_run_data()
+            if self.sim.model_panel.data_collection == 'main':
+                self.store_run_data()
+            elif self.sim.model_panel.data_collection == 'periodic':
+                pass
+            else:
+                raise Exception('no valid data collection mode')
 
         # data processing finished. Update database new run
         self.order_list = list()
@@ -120,3 +127,35 @@ class DataCollection(object):
         for i, index in enumerate(self.sim.model_panel.names_variables):
             df_exp_interaction[f"{self.sim.model_panel.names_variables[i]}"] = [self.sim.model_panel.params_dict[index]]
         return df_exp_interaction
+
+    def periodic_data_collection(self):
+        # 25 runs
+        periodic_interval = 0.5
+        t_start = self.sim.env.now
+        while True:
+            # collect total free inventory
+            on_hand = 0
+            for type in self.sim.model_panel.material_types:
+                on_hand += self.sim.inventory.on_hand_inventory[type]
+            # collect WIP
+            if self.sim.policy_panel.release_technique == "DRACO":
+                wip = self.sim.system_state_dispatching.get_wip()
+            else:
+                wip = self.sim.release.get_wip()
+            # collect data
+            self.periodic_data.append([on_hand, wip])
+            yield self.sim.env.timeout(periodic_interval)
+            # break if collection period is over (assumed to be one run)
+            if self.sim.env.now >= t_start + self.sim.model_panel.RUN_TIME:
+                break
+
+        # save data from the run
+        df = pd.DataFrame(self.periodic_data)
+        df.columns = ['on_hand', 'wip']
+        if self.experiment_database is None:
+            self.experiment_database = df
+        else:
+            self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
+        # clear list
+        self.periodic_data = list()
+        return

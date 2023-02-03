@@ -27,7 +27,7 @@ cost_ratios_dict = {'base': {'holding_cost': 0.1, 'WIP_cost': 2, 'earliness_cost
 experimental_params_dict = []
 
 def get_interactions():
-    # """
+    """
     # IMM
     for m_complexity in material_complexity:
         for mat_all in material_allocation:
@@ -89,22 +89,112 @@ def get_interactions():
                         params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
                         params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
                         experimental_params_dict.append(params_dict)
-    """
+
+    # test periodic values
+    cr = 'base'
     params_dict = dict()
-    params_dict["name"] = "IMM"
+    params_dict["name"] = "MAR"
     params_dict["release_technique"] = "immediate"
-    params_dict["material_complexity"] = "high"
-    params_dict["material_complexity_dict"] = material_complexity_dict["high"]
-    params_dict["material_allocation"] = 'HB' # "NHB" #
-    params_dict["material_replenishment"] = 'hierarchical' # 'intergral' #
-    params_dict["release_target"] = 20
-    params_dict["cost_ratio"] = "test"
-    params_dict["holding_cost"] = 0.1
-    params_dict["WIP_cost"] = 1
-    params_dict["earliness_cost"] = 0.5
-    params_dict["tardiness_cost"] = 4.5
+    params_dict["material_complexity"] = "moderate"
+    params_dict["material_complexity_dict"] = material_complexity_dict["moderate"]
+    params_dict["material_allocation"] = "HB"
+    params_dict["material_replenishment"] = 'hierarchical'
+    params_dict["release_target"] = None
+    params_dict["cost_ratio"] = cr
+    params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+    params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+    params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+    params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
-    #"""
+
+    params_dict = dict()
+    params_dict["name"] = "CONWIP"
+    params_dict["release_technique"] = "CONWIP"
+    params_dict["material_complexity"] = "moderate"
+    params_dict["material_complexity_dict"] = material_complexity_dict["moderate"]
+    params_dict["material_allocation"] = "HB"
+    params_dict["material_replenishment"] = 'hierarchical'
+    params_dict["release_target"] = 47
+    params_dict["cost_ratio"] = cr
+    params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+    params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+    params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+    params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
+    experimental_params_dict.append(params_dict)
+
+    cr = 'base'
+    params_dict = dict()
+    params_dict["name"] = "DRACO"
+    params_dict["release_technique"] = "DRACO"
+    params_dict["material_complexity"] = "moderate"
+    params_dict["material_complexity_dict"] = material_complexity_dict["moderate"]
+    params_dict["material_allocation"] = "NHB"
+    params_dict["material_replenishment"] = 'intergral'
+    params_dict["release_target"] = 25
+    params_dict["cost_ratio"] = cr
+    params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+    params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+    params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+    params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
+    experimental_params_dict.append(params_dict)
+
+    # """
+    # IMM
+    m_complexity = "moderate"
+    cr = 'base'
+    for mat_all in material_allocation:
+        for mat_repl in material_replenishment:
+            params_dict = dict()
+            params_dict["name"] = "MAR"
+            params_dict["release_technique"] = "immediate"
+            params_dict["material_complexity"] = m_complexity
+            params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
+            params_dict["material_allocation"] = mat_all
+            params_dict["material_replenishment"] = mat_repl
+            params_dict["release_target"] = None
+            params_dict["cost_ratio"] = cr
+            params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+            params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+            params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+            params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
+            experimental_params_dict.append(params_dict)
+
+    # CONWIP
+    for mat_all in material_allocation:
+        for mat_repl in material_replenishment:
+            params_dict = dict()
+            params_dict["name"] = "CONWIP"
+            params_dict["release_technique"] = "CONWIP"
+            params_dict["material_complexity"] = m_complexity
+            params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
+            params_dict["material_allocation"] = mat_all
+            params_dict["material_replenishment"] = mat_repl
+            params_dict["release_target"] = 47
+            params_dict["cost_ratio"] = cr
+            params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+            params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+            params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+            params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
+            experimental_params_dict.append(params_dict)
+
+    # DRACO
+    for mat_all in material_allocation:
+        for mat_repl in material_replenishment:
+            params_dict = dict()
+            params_dict["name"] = "DRACO"
+            params_dict["release_technique"] = "DRACO"
+            params_dict["material_complexity"] = m_complexity
+            params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
+            params_dict["material_allocation"] = mat_all
+            params_dict["material_replenishment"] = mat_repl
+            params_dict["release_target"] = 25
+            params_dict["cost_ratio"] = cr
+            params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
+            params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
+            params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
+            params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
+            experimental_params_dict.append(params_dict)
+
     print(len(experimental_params_dict))
     return experimental_params_dict
 

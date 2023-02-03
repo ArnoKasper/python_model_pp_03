@@ -15,7 +15,7 @@ class ModelPanel(object):
         self.general_functions: GeneralFunctions = GeneralFunctions(simulation=self.sim)
 
         # project names
-        self.project_name: str = "Innsbruck"
+        self.project_name: str = "Innsbruck_sensitivity"
         self.experiment_name: str = self.project_name + "_"
         self.names_variables = ["name",
                                 'release_technique',
@@ -37,7 +37,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 150  # number of replications
+        self.NUMBER_OF_RUNS: int = 150 # 3 #  # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -152,6 +152,13 @@ class ModelPanel(object):
         self.WIP_cost = self.params_dict["WIP_cost"]
         self.earliness_cost = self.params_dict["earliness_cost"]
         self.tardiness_cost = self.params_dict["tardiness_cost"]
+
+        '''
+        data collection types
+            - main 
+            - periodic 
+        '''
+        self.data_collection = 'main'
         return
 
 
@@ -170,7 +177,7 @@ class PolicyPanel(object):
         """
         self.due_date_method: str = 'random'
         self.DD_constant_value: float = 55
-        self.DD_random_min_max: List[int, int] = [45, 75]
+        self.DD_random_min_max: List[int, int] = [40, 50] # [45, 75]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
@@ -179,6 +186,8 @@ class PolicyPanel(object):
         """
         types of generation techniques
             - BSS (base-stock system)
+                - integral: PoHex
+                - hierarchical: ExHed
         """
         self.material_replenishment = self.params_dict['material_replenishment']
         self.reorder_level = self.sim.general_functions.reorder_point(replenishment_type=self.material_replenishment,

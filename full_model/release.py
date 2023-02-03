@@ -395,7 +395,7 @@ class Release(object):
         :return:
         """
         # remove load
-        if completed and self.tracking_variable == 'total':
+        if completed and self.tracking_variable in ['total', 'none']:
             # only update load if order is completed
             self.contribute_completed(order=order)
         elif self.tracking_variable == 'work_centre':
@@ -436,3 +436,9 @@ class Release(object):
         q = len(order.requirements)
         r = len(order.routing_sequence)
         return order.arrival_time + (order.due_date - order.arrival_time) * (q / (q + r))
+
+    def get_wip(self):
+        released = self.sim.policy_panel.released
+        completed = self.sim.policy_panel.completed
+        wip = released - completed
+        return wip
