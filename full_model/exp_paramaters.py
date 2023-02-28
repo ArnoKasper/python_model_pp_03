@@ -17,17 +17,17 @@ material_complexity_dict = {'low': {'material_quantity': 1, "material_request": 
                             'moderate': {'material_quantity': 3, "material_request": "constant"},
                             'high': {'material_quantity': 3, "material_request": "variable"}}
 
-cost_ratios_dict = {'base': {'holding_cost': 0.1, 'WIP_cost': 2, 'earliness_cost': 0.5,'tardiness_cost': 5},
-                    'low_low': {'holding_cost': 0.1, 'WIP_cost': 1.5, 'earliness_cost': 0.5,'tardiness_cost': 4},
-                    'high_low': {'holding_cost': 0.1, 'WIP_cost': 3, 'earliness_cost': 0.5,'tardiness_cost': 4},
-                    'low_high': {'holding_cost': 0.1, 'WIP_cost': 1.5, 'earliness_cost': 0.5,'tardiness_cost': 7},
-                    'high_high': {'holding_cost': 0.1, 'WIP_cost': 3, 'earliness_cost': 0.5,'tardiness_cost': 7}
+cost_ratios_dict = {'base': {'holding_cost': 0.5, 'WIP_cost': 3, 'earliness_cost': 0.75,'tardiness_cost': 4},
+                    'low_low': {'holding_cost': 0.5, 'WIP_cost': 2, 'earliness_cost': 0.75,'tardiness_cost': 3},
+                    'high_low': {'holding_cost': 0.5, 'WIP_cost': 4, 'earliness_cost': 0.75,'tardiness_cost': 3},
+                    'low_high': {'holding_cost': 0.5, 'WIP_cost': 2, 'earliness_cost': 0.75,'tardiness_cost': 5},
+                    'high_high': {'holding_cost': 0.5, 'WIP_cost': 4, 'earliness_cost': 0.75,'tardiness_cost': 5}
                     }
 
 experimental_params_dict = []
 
 def get_interactions():
-    """
+    #"""
     # IMM
     for m_complexity in material_complexity:
         for mat_all in material_allocation:
@@ -89,9 +89,10 @@ def get_interactions():
                         params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
                         params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
                         experimental_params_dict.append(params_dict)
-
+    #"""
+    """
     # test periodic values
-    cr = 'base'
+    cr = 'low_low' # 'base' #
     params_dict = dict()
     params_dict["name"] = "MAR"
     params_dict["release_technique"] = "immediate"
@@ -122,7 +123,7 @@ def get_interactions():
     params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
 
-    cr = 'base'
+    # cr = 'base'
     params_dict = dict()
     params_dict["name"] = "DRACO"
     params_dict["release_technique"] = "DRACO"
@@ -138,7 +139,9 @@ def get_interactions():
     params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
 
-    # """
+    #"""
+    """
+    # sensitivity
     # IMM
     m_complexity = "moderate"
     cr = 'base'
@@ -194,7 +197,7 @@ def get_interactions():
             params_dict["earliness_cost"] = cost_ratios_dict[cr]["earliness_cost"]
             params_dict["tardiness_cost"] = cost_ratios_dict[cr]["tardiness_cost"]
             experimental_params_dict.append(params_dict)
-
+    """
     print(len(experimental_params_dict))
     return experimental_params_dict
 

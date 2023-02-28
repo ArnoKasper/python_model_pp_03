@@ -184,7 +184,7 @@ class GeneralFunctions(object):
     def planned_manufacturing_lead_time(self):
         c_e = self.sim.model_panel.earliness_cost
         c_t = self.sim.model_panel.tardiness_cost
-        F_t = c_t/(c_t+c_e)
+        F_t = c_t / (c_t + c_e)
         mean = self.get_mean_manufacturing_lead_time()
         stddev = self.get_std_dev_manufacturing_lead_time()
         z = self.z_score(prob=F_t)
@@ -211,8 +211,8 @@ class GeneralFunctions(object):
     def reorder_point(self, replenishment_type, a_min_max):
         # determine the reorder point
         c_h = self.sim.model_panel.holding_cost
-        c_w = self.sim.model_panel.WIP_cost
-        F_s = c_w/(c_w+c_h)
+        c_t = self.sim.model_panel.tardiness_cost
+        F_s = c_t / (c_h + c_t)
         # get mean and stddev
         beta = self.beta(replenishment_type=replenishment_type, a_min_max=a_min_max)
         theta = self.get_mean_demand_during_replenishment()
