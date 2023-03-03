@@ -15,7 +15,7 @@ class ModelPanel(object):
         self.general_functions: GeneralFunctions = GeneralFunctions(simulation=self.sim)
 
         # project names
-        self.project_name: str = "Innsbruck"
+        self.project_name: str = "Innsbruck_periodic"
         self.experiment_name: str = self.project_name + "_"
         self.names_variables = ["name",
                                 'release_technique',
@@ -158,7 +158,7 @@ class ModelPanel(object):
             - main 
             - periodic 
         '''
-        self.data_collection = 'main'
+        self.data_collection = 'periodic' # 'main'
         return
 
 
@@ -177,7 +177,7 @@ class PolicyPanel(object):
         """
         self.due_date_method: str = 'random'
         self.DD_constant_value: float = 55
-        self.DD_random_min_max: List[int, int] = [45, 75] # [38, 52] #
+        self.DD_random_min_max: List[int, int] = [45, 75] # [36, 46] #
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
