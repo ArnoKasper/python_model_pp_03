@@ -21,6 +21,7 @@ class Release(object):
         self.activate_continuous_release = False
         self.activate_periodic_release = False
         self.activate_non_hierarchical = False
+        self.activate_order_based_release = False
 
         # release measurement information
         self.measure = None
@@ -44,15 +45,19 @@ class Release(object):
                 release_target[work_centre] = self.sim.policy_panel.release_target
             self.sim.policy_panel.release_target = release_target
         # check if periodic release must be activated
-        if self.sim.policy_panel.release_technique_attributes['periodic']:
+        if 'periodic' in self.sim.policy_panel.release_technique_attributes['release_triggers']:
             self.activate_periodic_release = True
             # start process
             self.periodic_processes = self.sim.env.process(self.periodic_release())
-
         # activate or deactivate continuous trigger
-        self.activate_continuous_trigger = self.sim.policy_panel.release_technique_attributes['trigger']
-        self.activate_continuous_release = self.sim.policy_panel.release_technique_attributes['continuous']
-        self.activate_non_hierarchical = self.sim.policy_panel.release_technique_attributes['non_hierarchical']
+        if 'starvation_trigger' in self.sim.policy_panel.release_technique_attributes['release_triggers']:
+            self.activate_continuous_trigger = True
+        if 'continuous' in self.sim.policy_panel.release_technique_attributes['release_triggers']:
+            self.activate_continuous_release = True
+        if 'non_hierarchical' in self.sim.policy_panel.release_technique_attributes['release_triggers']:
+            self.activate_non_hierarchical = True
+        if 'order_based' in self.sim.policy_panel.release_technique_attributes['release_triggers']:
+            self.activate_order_based_release = True
         # set measurement for release
         self.measure = self.sim.policy_panel.release_technique_attributes['measure']
         return
@@ -74,6 +79,12 @@ class Release(object):
         return
 
     def activate_release(self, work_centre=None, order=None, material_arrival=False):
+        # control for order based release:
+        if self.activate_order_based_release and order is not None:
+            # new arrival, check if not imm
+            if not self.release_review(order=order):
+                # no direct release, set release time
+                self.sim.env.process(self.release_order_based(order=order))
         # control for continuous release
         if self.activate_continuous_release:
             self.continuous_release()
@@ -221,6 +232,11 @@ class Release(object):
                         self.sim.policy_panel.release_target[work_centre]:
                     release = False
                     return release
+        elif self.tracking_variable == 'planned_release_time':
+            if self.sim.env.now >= order.planned_release_time:
+                return True
+            else:
+                return False
         else:
             raise Exception('failed review the correct tracking variable for release')
         return release
@@ -243,7 +259,7 @@ class Release(object):
                 # contribute following aggregate load method Oosterman et al., 2000
                 self.sim.policy_panel.released[work_centre] += self.control_measure(order=order,
                                                                                           work_centre=work_centre)
-        elif self.tracking_variable == 'none':
+        elif self.tracking_variable in ['none', 'planned_release_time']:
             self.sim.policy_panel.released += 1
         else:
             raise Exception('failed review the correct tracking variable for release')
@@ -260,7 +276,7 @@ class Release(object):
             # contribute following aggregate load method Oosterman et al., 2000
             self.sim.policy_panel.completed[work_centre] += self.control_measure(order=order,
                                                                                        work_centre=work_centre)
-        elif self.tracking_variable == 'none':
+        elif self.tracking_variable  in ['none', 'planned_release_time']:
             self.sim.policy_panel.completed += 1
         else:
             raise Exception('failed review the correct tracking variable for release')
@@ -279,7 +295,7 @@ class Release(object):
             for i, order_list in enumerate(pool_list):
                 order = order_list[self.index_order_object]
                 # review
-                if review_condition == 'target':
+                if review_condition in ['target', 'order_based']:
                     order.release = self.release_review(order=order)
                 elif review_condition == 'immediate':
                     order.release = True
@@ -319,6 +335,15 @@ class Release(object):
         self.release_from_pool(release_now=order_list)
         # allocate materials to orders
         self.dedicate_materials_to_orders(order=order)
+        return
+
+    def release_order_based(self, order):
+        # get planned pool time
+        o_i = order.planned_release_time - self.sim.env.now
+        # wait for the planned pool time, then release
+        yield self.sim.env.timeout(o_i)
+        # time to release the order, initiate release
+        break_loop, next_release = self.release(review_condition='order_based')
         return
 
     def periodic_release(self):
@@ -421,21 +446,6 @@ class Release(object):
             for requirement in order.requirements:
                 material_needs[requirement] += 1
         return material_needs
-
-    def material_planned_release_date(self, order):
-        n = len(self.sim.model_panel.material_types)
-        q = len(order.requirements)
-        return order.arrival_time + ((order.due_date - order.arrival_time) / n) * q
-
-    def capacity_planned_release_date(self, order):
-        m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
-        r = len(order.routing_sequence)
-        return order.arrival_time + ((order.due_date - order.arrival_time) / m) * r
-
-    def integrated_planned_release_date(self, order):
-        q = len(order.requirements)
-        r = len(order.routing_sequence)
-        return order.arrival_time + (order.due_date - order.arrival_time) * (q / (q + r))
 
     def get_wip(self):
         released = self.sim.policy_panel.released

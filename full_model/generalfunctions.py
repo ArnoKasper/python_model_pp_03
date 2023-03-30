@@ -84,6 +84,17 @@ class GeneralFunctions(object):
         )
         return return_value
 
+    def order_random_value_DD(self, order):
+        """
+        allocate random due date to order
+        :return: Due Date value
+        """
+        a_i = self.random_generator.uniform(
+            self.sim.policy_panel.DD_order_random_min_max[0],
+            self.sim.policy_panel.DD_order_random_min_max[1]
+        )
+        return self.sim.env.now + a_i + order.planned_manufacturing_lead_time
+
     def add_constant_DD(self):
         """
         allocate due date to order by adding a constant
@@ -92,7 +103,7 @@ class GeneralFunctions(object):
         """
         return self.sim.env.now + self.sim.policy_panel.DD_constant_value
 
-    def total_work_content(self, order):
+    def total_work_content_DD(self, order):
         """
         allocate due date to order by total work content
         :param order:
@@ -100,7 +111,7 @@ class GeneralFunctions(object):
         """
         return self.sim.env.now + (order.process_time_cumulative * self.sim.policy_panel.DD_total_work_content_value)
 
-    def total_routing_content(self, order):
+    def number_of_operations_DD(self, order):
         """
         allocate due date to order by total work content
         :param order:
@@ -134,7 +145,7 @@ class GeneralFunctions(object):
             cv_p = 1
         else:
             raise Exception('cannot set queue for the given process time distribution')
-        return mean_p * rho / (1 - rho) * (cv_a ** 2 + cv_p ** 2) / 2
+        return mean_p * (rho / (1 - rho)) * ((cv_a ** 2 + cv_p ** 2) / 2)
 
     def get_mean_manufacturing_lead_time(self):
         mean_r = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT) + 1) / 2
@@ -142,86 +153,65 @@ class GeneralFunctions(object):
         mean_q = self.get_mean_q()
         return mean_r * (mean_p + mean_q)
 
-    def get_std_dev_manufacturing_lead_time(self):
-        mean_p = self.sim.model_panel.MEAN_PROCESS_TIME
-        rho = self.sim.model_panel.AIMED_UTILIZATION
-        mean_a = mean_p / rho
-        mean_q = self.get_mean_q()
-        # compute variance mm1 queue
-        v_mg1 = mean_q**2 + (mean_a * (2/math.sqrt(2)))/(3*(1-rho))
-        v = 0.5 ** 2 + v_mg1
-        # routing distribution params
-        nr_of_routing = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
-        prob_routing_j = 1 / nr_of_routing
-        # assume independent variances
-        result = 0
-        for j, _ in enumerate(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT):
-            result += (j + 1) * math.sqrt(nr_of_routing) * v
-        return math.sqrt(prob_routing_j * result)
-
-    def get_mean_demand_during_replenishment(self):
-        mean_ell = self.sim.model_panel.expected_replenishment_time
-        mean_material_quantity = self.sim.model_panel.material_quantity
-        m = len(self.sim.model_panel.material_types)
-        arrival_rate = 1/self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
-        # determine demand rate
-        delta = mean_material_quantity * (arrival_rate/m)
-        return mean_ell * delta
-
-    def get_std_dev_demand_during_replenishment(self, replenishment_type, a_min_max):
-        beta = self.beta(replenishment_type=replenishment_type, a_min_max=a_min_max)
-        theta = self.get_mean_demand_during_replenishment()
-        std_dev_repl = self.sim.model_panel.supply_sigma
-        mean_material_quantity = self.sim.model_panel.material_quantity
-        m = len(self.sim.model_panel.material_types)
-        arrival_rate = 1/self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
-        delta = mean_material_quantity * (arrival_rate / m)
-        return math.sqrt(theta - beta + delta**2 * std_dev_repl**2)
-
     def z_score(self, prob):
         return st.norm.ppf(prob)
 
-    def planned_manufacturing_lead_time(self):
+    def station_planned_lead_time(self):
+        # expected station throughput time
+        mean_p = self.sim.model_panel.MEAN_PROCESS_TIME
+        mean_q = self.get_mean_q()
+        tau = mean_q + mean_p
+
+        # standard deviation station throughput time
+        rho = self.sim.model_panel.AIMED_UTILIZATION
+        mean_a = mean_p / rho
+        alpha = 1 / 0.5**2
+        beta = 1/alpha * 1
+        third_moment_estimate = alpha * (alpha + 1) * (alpha + 1) * beta**3
+        v_q = mean_q ** 2 + (mean_a * third_moment_estimate) / (3 * (1 - rho))
+        v_p = 2/(1**2)
+        sigma_S = math.sqrt(v_q + v_p)
+
+        # critical value
         c_e = self.sim.model_panel.earliness_cost
         c_t = self.sim.model_panel.tardiness_cost
         F_t = c_t / (c_t + c_e)
-        mean = self.get_mean_manufacturing_lead_time()
-        stddev = self.get_std_dev_manufacturing_lead_time()
         z = self.z_score(prob=F_t)
-        return mean + z * stddev
 
-    def beta(self, replenishment_type, a_min_max):
-        if replenishment_type == 'hierarchical':
-            # hierarchical
-            beta = 0
-        elif replenishment_type == 'intergral':
-            # intergral
-            L = self.planned_manufacturing_lead_time()
-            mean_A = sum(a_min_max) / len(a_min_max)
-            arrival_rate = 1 / self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
-            mean_material_quantity = self.sim.model_panel.material_quantity
-            m = len(self.sim.model_panel.material_types)
-            delta = mean_material_quantity * (arrival_rate / m)
-            # integrated
-            beta = (mean_A - L) * delta
+        return tau + z * sigma_S
+
+    def get_expected_demand_during_supply_lead_time_theta(self, replenishment_type, a_min_max):
+        mean_material_quantity = self.sim.model_panel.material_quantity
+        n = len(self.sim.model_panel.material_types)
+        arrival_rate = 1/self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
+        # determine demand rate
+        delta_k = mean_material_quantity * (arrival_rate/n)
+
+        if replenishment_type == 'PoHed':
+            L = self.sim.model_panel.expected_replenishment_time
+            m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
+            L_o = self.station_planned_lead_time()
+            o_max = max(a_min_max)
+            o_min = min(a_min_max)
+            theta_A = delta_k * max(0, (L-o_max)) * (max(0, o_max)/o_max)  # early demand
+            theta_B = delta_k * ((min(L, o_max) - max(0, o_min)) / 2) * (max(0, (min(L, o_max) - max(0, o_min))) / (o_max - o_min))  # regular demand
+            theta_C = delta_k * L * max(0, (-o_min / (o_max - o_min)))  # rush demand
+            theta = theta_A + theta_B + theta_C
+        elif replenishment_type == 'ExHed':
+            L = self.sim.model_panel.expected_replenishment_time
+            theta = delta_k * L
         else:
             raise Exception(f'cannot beta for the given replenishment type {replenishment_type}')
-        return beta
+        return theta
 
-    def reorder_point(self, replenishment_type, a_min_max):
-        # determine the reorder point
+    def hedging_policy(self, replenishment_type, a_min_max):
         c_h = self.sim.model_panel.holding_cost
         c_t = self.sim.model_panel.tardiness_cost
         F_s = c_t / (c_h + c_t)
-        # get mean and stddev
-        beta = self.beta(replenishment_type=replenishment_type, a_min_max=a_min_max)
-        theta = self.get_mean_demand_during_replenishment()
-        stddev = self.get_std_dev_demand_during_replenishment(replenishment_type=replenishment_type,
-                                                              a_min_max=a_min_max
-                                                              )
+        theta = self.get_expected_demand_during_supply_lead_time_theta(replenishment_type=replenishment_type, a_min_max=a_min_max)
+        sigma_L = math.sqrt(theta)
         z = self.z_score(prob=F_s)
         # compute stock level, assume round up
-        stock_level = int(theta - beta + z * stddev) + 1
+        stock_level = int(theta + z * sigma_L) + 1
         reorder_point = stock_level - 1
         return reorder_point
-

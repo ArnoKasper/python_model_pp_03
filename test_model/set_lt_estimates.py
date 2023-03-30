@@ -30,7 +30,7 @@ class ControlPanel(object):
         self.sim = simulation
         experimental_params_dict = parameters.get_interactions()
         self.params_dict = experimental_params_dict[self.experiment_number]
-        self.print_info = False
+        self.print_info = True
         self.print_final_info = True
 
         # set experiment name

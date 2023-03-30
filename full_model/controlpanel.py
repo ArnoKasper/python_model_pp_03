@@ -15,7 +15,7 @@ class ModelPanel(object):
         self.general_functions: GeneralFunctions = GeneralFunctions(simulation=self.sim)
 
         # project names
-        self.project_name: str = "Innsbruck_periodic"
+        self.project_name: str = "Innsbruck"
         self.experiment_name: str = self.project_name + "_"
         self.names_variables = ["name",
                                 'release_technique',
@@ -27,7 +27,10 @@ class ModelPanel(object):
                                 "holding_cost",
                                 "WIP_cost",
                                 "earliness_cost",
-                                "tardiness_cost"
+                                "tardiness_cost",
+                                'dd_setting',
+                                "o_min",
+                                'o_max'
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -37,7 +40,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 150 # 3 #  # number of replications
+        self.NUMBER_OF_RUNS: int = 150  # 5 # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -120,7 +123,7 @@ class ModelPanel(object):
         for type in self.material_types:
             self.materials[type] = {'name': f'{type}',
                                     'enter_inventory': True,
-                                    "generation": 'BSS',
+                                    "generation": 'order_up_to',
                                     'expected_lead_time': self.expected_replenishment_time}
             self.SKU[type]: Inventory = Inventory(sim=self.sim,
                                                   env=self.sim.env,
@@ -139,7 +142,7 @@ class ModelPanel(object):
                 need to define k
         """
         self.DELIVERY = "supplier"  # "immediate"
-        self.SUPPLY_DISTRIBUTION = 'normal'
+        self.SUPPLY_DISTRIBUTION = 'constant' # 'normal'
         self.supply_k = 2
         self.supply_sigma = 10
         # disruption
@@ -158,7 +161,7 @@ class ModelPanel(object):
             - main 
             - periodic 
         '''
-        self.data_collection = 'periodic' # 'main'
+        self.data_collection = 'main' # 'periodic' #
         return
 
 
@@ -171,28 +174,34 @@ class PolicyPanel(object):
         """
         due date procedure
             - random
+            - order_random
             - constant
+            
             - total_work_content
-            - total_routing_content
+            - number_of_operations
         """
-        self.due_date_method: str = 'random'
+        self.due_date_method: str = 'order_random'
         self.DD_constant_value: float = 55
-        self.DD_random_min_max: List[int, int] = [45, 75] # [36, 46] #
+        self.DD_random_min_max: List[int, int] = [45, 75]
+        o_min = self.params_dict['o_min']
+        o_max = self.params_dict['o_max']
+        self.DD_order_random_min_max: List[float, float] = [-2.75, 52.25]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
-        self.DD_total_routing_content_value: float = self.DD_constant_value / average_routing_length
+        self.DD_number_of_operations: float = self.DD_constant_value / average_routing_length
 
         # generation
         """
-        types of generation techniques
-            - BSS (base-stock system)
+        types of material replenishment techniques 
+            - order_up_to
                 - integral: PoHex
                 - hierarchical: ExHed
         """
         self.material_replenishment = self.params_dict['material_replenishment']
-        self.reorder_level = self.sim.general_functions.reorder_point(replenishment_type=self.material_replenishment,
-                                                                      a_min_max=self.DD_random_min_max)
+        self.reorder_level = self.sim.general_functions.hedging_policy(replenishment_type=self.material_replenishment,
+                                                                       a_min_max=self.DD_order_random_min_max)
         print(self.reorder_level)
+
         self.generated = {}
         self.delivered = {}
         self.generation_technique = {}
@@ -203,7 +212,7 @@ class PolicyPanel(object):
             - release
             - arrival 
         """
-        self.reorder_moment = 'arrival'
+        self.reorder_moment = 'arrival' # 'release' #
 
         # assume that all orders have the same generation process
         for type, material in self.sim.model_panel.materials.items():
@@ -220,6 +229,7 @@ class PolicyPanel(object):
             - WLC: pure_periodic_release
             - WLC: pure_continuous release
             - WLC: LUMS_COR
+            - BIL: backward infinite loading 
         
         for methods that use process time
             - stochastic 
@@ -256,9 +266,9 @@ class PolicyPanel(object):
         self.sequencing_rule = 'PRD'
         self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES[self.sequencing_rule].copy()
         # set queueing estimate
-        mean_p = self.sim.model_panel.MEAN_PROCESS_TIME
-        mean_q = self.sim.general_functions.get_mean_q()
-        self.sequencing_rule_attributes['PRD_k'] = mean_p + mean_q
+        L_s = self.sim.general_functions.station_planned_lead_time()
+        self.sequencing_rule_attributes['PRD_k'] = L_s
+        print(L_s)
         # dispatching
         """
         dispatching rules available
@@ -294,55 +304,36 @@ class PolicyPanel(object):
 
 GENERATION_TECHNIQUE_ATTRIBUTES = {
     'exponential': {},
-    'BSS': {'generated': 0, 'delivered': 0},
+    'order_up_to': {'generated': 0, 'delivered': 0},
 }
 
 RELEASE_TECHNIQUE_ATTRIBUTES = {
-
     'immediate': {'tracking_variable': 'none',
                   'measure': 'none',
-                  'periodic': False,
-                  'continuous': True,
-                  'trigger': False,
-                  'non_hierarchical': False},
+                  'release_triggers': ['continuous']},
     'DRACO': {'tracking_variable': 'total',
               'measure': 'WIP',
-              'periodic': False,
-              'continuous': False,
-              'trigger': False,
-              'non_hierarchical': True},
+              'release_triggers': ['non_hierarchical']},
     'CONWIP': {'tracking_variable': 'total',
                'measure': 'WIP',
-               'periodic': False,
-               'continuous': True,
-               'trigger': False,
-               'non_hierarchical': False},
+               'release_triggers': ['continuous']},
     'CONWIP_trig': {'tracking_variable': 'total',
                     'measure': 'WIP',
-                    'periodic': False,
-                    'continuous': True,
-                    'trigger': True,
-                    'non_hierarchical': False},
+                    'release_triggers': ['continuous', 'starvation_trigger']},
     'CONLOAD': {'tracking_variable': 'total',
                 'measure': 'workload',
-                'periodic': False,
-                'continuous': True,
-                'trigger': False,
-                'non_hierarchical': False},
+                'release_triggers': ['continuous']},
     'pure_periodic_release': {'tracking_variable': 'work_centre',
                               'measure': 'workload',
-                              'periodic': True,
-                              'continuous': False,
-                              'trigger': False,
-                              'check_period': 4,
-                              'non_hierarchical': False},
+                              'release_triggers': ['periodic'],
+                              'check_period': 4},
     'LUMS_COR': {'tracking_variable': 'work_centre',
                  'measure': 'workload',
-                 'periodic': True,
-                 'continuous': False,
-                 'trigger': True,
-                 'check_period': 4,
-                 'non_hierarchical': False}
+                 'release_triggers': ['periodic', 'starvation_trigger'],
+                 'check_period': 4},
+    'BIL': {'tracking_variable': 'planned_release_time',
+              'measure': 'none',
+              'release_triggers': ['order_based', 'continuous']}
 }
 
 POOL_RULE_ATTRIBUTES = {

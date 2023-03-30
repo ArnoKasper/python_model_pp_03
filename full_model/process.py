@@ -276,6 +276,7 @@ class Process(object):
         df_list.append(order.completion_time - order.release_time)
         df_list.append(order.completion_time - order.due_date)
         df_list.append(max(0, (order.completion_time - order.due_date)))
+        df_list.append(-min(0, (order.completion_time - order.due_date)))
         df_list.append(max(0, self.heavenside(x=(order.completion_time - order.due_date))))
         df_list.append(order.material_available_time - order.arrival_time)
         df_list.append(order.material_replenishment_time)

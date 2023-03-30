@@ -23,6 +23,7 @@ class DataCollection(object):
             'shop_throughput_time',
             'lateness',
             'tardiness',
+            'earliness',
             'tardy',
             'material_waiting_time',
             'material_replenishment_time',
@@ -93,13 +94,12 @@ class DataCollection(object):
         df["mean_lateness"] = df_run.loc[:, "lateness"].mean()
         df["std_lateness"] = df_run.loc[:, "lateness"].std()
         df["mean_tardiness"] = df_run.loc[:, "tardiness"].mean()
+        df["mean_earliness"] = df_run.loc[:, "earliness"].mean()
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
 
         # cost
         arrival_rate = 1 / self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL
-        mean_A = sum(self.sim.policy_panel.DD_random_min_max) / len(self.sim.policy_panel.DD_random_min_max)
-        df_run["earliness"] = mean_A - df_run.loc[:, "throughput_time"].mean() + df_run.loc[:, "tardiness"].mean()
 
         df["mean_holding_cost"] = df_run.loc[:, "inventory_time"].mean() * arrival_rate * self.sim.model_panel.holding_cost
         df["mean_WIP_cost"] = df_run.loc[:, "shop_throughput_time"].mean() * arrival_rate * self.sim.model_panel.WIP_cost
@@ -112,7 +112,7 @@ class DataCollection(object):
 
         # add key information
         df['reorder_point'] = self.sim.policy_panel.reorder_level
-        df['planned_lead_time'] = self.sim.general_functions.planned_manufacturing_lead_time()
+        df['planned_station_lead_time'] = self.sim.general_functions.station_planned_lead_time()
 
         # save data from the run
         if self.experiment_database is None:

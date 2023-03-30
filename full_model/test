@@ -1,7 +1,56 @@
-results of experiment Innsbruck_DRACO_DRACO_moderate_intergral_NHB_25_base_0.1_2_0.5_5_:
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  reorder_point  planned_lead_time
- 2.0    89.831191 24.469713  9.508997  14.960716       48.830785   0.970049     -35.558694     16.522171        0.554775               58.753613           0.02084           7.533871      46.164362            18.042531             2.773873        74.514637            25.0           0.1       2.0             0.5             5.0           52.0          47.008739
+results of experiment Innsbruck_test_BIL_multiple_ExHed_HB_25_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.079055 50.192239 25.673885  24.518354       32.142541   0.808353     -19.046132     16.884715        1.085333       20.131465               25.167918           0.10699          12.397802      37.828209            10.065732             2.713333        63.005076            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           55.0                   12.69958
 
-results of experiment Innsbruck_DRACO_DRACO_moderate_intergral_NHB_25_base_0.1_2_0.5_5_:
- run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  reorder_point  planned_lead_time
- 2.0    89.831887 24.448784   9.46544  14.983344       87.708016        1.0     -23.056287     15.829668        1.001577               84.880876          0.062284          13.532055      46.234186            12.026397             5.007887        76.800525            25.0           0.1       2.0             0.5             5.0           64.0          47.008739
+results of experiment Innsbruck_test_BIL_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.081489 50.310881 25.537789  24.773092       21.744596   0.742938      -18.93182     16.873992        1.111877       20.043697               26.833864          0.106126           8.387177      38.221232            10.021849             2.779692         59.40995            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           29.0                   12.69958
+
+results of experiment Innsbruck_test_DRACO_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.105088 40.839069 24.316816  16.522253       21.831634   0.630406     -28.414112     22.146788        1.237001       29.651114              151.598838          0.053176           8.420749      25.491404            14.825557             3.092503        51.830213            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           29.0                   12.69958
+
+results of experiment Innsbruck_test_CONWIP_multiple_PoHed_NHB_47_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    89.960516 47.367307  23.55199  23.815316       18.628149   0.324328     -21.867828     22.781995        1.898062        23.76589               45.016673          0.157495           7.185123      36.743526            11.882945             4.745155        60.556749            47.0          0.25       1.0             0.5             2.5  -2.75  52.25           29.0                   12.69958
+
+results of experiment Innsbruck_test_DRACO_multiple_ExHed_HB_25_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.039758 47.962198 31.139796  16.822401       36.017251   0.960603     -21.284924     29.143894        7.503326       28.788251              333.539616          0.241727          13.892329      25.954488            14.394125            18.758316        72.999258            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           55.0                   12.69958
+
+results of experiment Innsbruck_test_DRACO_multiple_ExHed_NHB_25_moderate_0.25_1_0.5_2.5_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.073854 25.905909  8.676397  17.229512        31.86189   0.897743     -43.336093     20.641158        0.470163       43.806256               61.557655          0.014169          12.289551      26.582599            21.903128             1.175407        61.950685            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           55.0                   12.69958
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+results of experiment Innsbruck_test_DRACO_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_9_main_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.085708 38.669414  21.64356  17.025854       22.088589   0.646793     -44.939463     25.242581        0.839325       45.778787              136.119339          0.023935            8.51986      26.268386            22.889394             7.553921         65.23156            25.0          0.25       1.0             0.5             9.0  -2.75  52.25           32.0                  16.796312
+
+results of experiment Innsbruck_test_BIL_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_9_main_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.079517 49.904016 25.058377  24.845639       29.313603   0.882992     -33.697004     21.664714         0.39386       34.090865               10.041903          0.037228          11.306643      38.333162            17.045432             3.544744        70.229981            25.0          0.25       1.0             0.5             9.0  -2.75  52.25           32.0                  16.796312
+
+results of experiment Innsbruck_test_DRACO_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_2.5_main_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.105088 40.839069 24.316816  16.522253       21.831634   0.630406     -28.414112     22.146788        1.237001       29.651114              151.598838          0.053176           8.420749      25.491404            14.825557             3.092503        51.830213            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           29.0                   12.69958
+
+results of experiment Innsbruck_test_BIL_multiple_PoHed_NHB_25_moderate_0.25_1_0.5_2.5_main_-2.75_52.25_:
+ run  utilization  mean_ttt  mean_ptt  mean_sttt  mean_mat_inv_t  fill_rate  mean_lateness  std_lateness  mean_tardiness  mean_earliness  mean_squared_tardiness  percentage_tardy  mean_holding_cost  mean_WIP_cost  mean_earliness_cost  mean_tardiness_cost  mean_total_cost  release_target  holding_cost  WIP_cost  earliness_cost  tardiness_cost  o_min  o_max  reorder_point  planned_station_lead_time
+ 3.0    90.081489 50.310881 25.537789  24.773092       21.744596   0.742938      -18.93182     16.873992        1.111877       20.043697               26.833864          0.106126           8.387177      38.221232            10.021849             2.779692         59.40995            25.0          0.25       1.0             0.5             2.5  -2.75  52.25           29.0                   12.69958
+
+
+

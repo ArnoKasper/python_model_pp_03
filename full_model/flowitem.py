@@ -146,17 +146,27 @@ class Order(object):
             self.order_start_time[WC] = 0
             self.wc_state[WC] = "NOT_PASSED"
 
+        # planned lead time
+        L_s = self.sim.general_functions.station_planned_lead_time()
+        r_i = len(self.routing_sequence)
+        self.planned_manufacturing_lead_time = r_i * L_s
+
         # due date
         if self.sim.policy_panel.due_date_method == "random":
             self.due_date = self.sim.general_functions.random_value_DD()
+        elif self.sim.policy_panel.due_date_method == "order_random":
+            self.due_date = self.sim.general_functions.order_random_value_DD(order=self)
         elif self.sim.policy_panel.due_date_method == "constant":
             self.due_date = self.sim.general_functions.add_constant_DD()
         elif self.sim.policy_panel.due_date_method == "total_work_content":
-            self.due_date = self.sim.general_functions.total_work_content(order=self)
-        elif self.sim.policy_panel.due_date_method == "total_routing_content":
-            self.due_date = self.sim.general_functions.total_routing_content(order=self)
+            self.due_date = self.sim.general_functions.total_work_content_DD(order=self)
+        elif self.sim.policy_panel.due_date_method == "number_of_operations":
+            self.due_date = self.sim.general_functions.number_of_operations_DD(order=self)
         else:
             raise Exception("no valid due date procedure selected")
+
+        # planned release time
+        self.planned_release_time = self.due_date - self.planned_manufacturing_lead_time
 
         # ORR pool sequence rule
         self.pool_priority = 0

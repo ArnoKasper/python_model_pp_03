@@ -12,7 +12,7 @@ start_time = time.time()
 
 # set the range of the experiments that needs to be run
 lower_limit = 0
-upper_limit = 336
+upper_limit = 1#336
 
 # activate the simulation (automatic model)
 for exp_number in range(lower_limit, upper_limit):

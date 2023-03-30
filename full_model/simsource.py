@@ -30,6 +30,9 @@ class Demand(object):
             # add the order from the order book, if necessary
             if self.sim.policy_panel.release_technique == "DRACO" or self.sim.policy_panel.dispatching_rule == "FOCUS":
                 self.sim.system_state_dispatching.input_order_book(order=order)
+            # check replenishment
+            if self.sim.policy_panel.material_replenishment == "PoHed":
+                self.sim.generation.pooled_hedging_input_check(order=order)
             # release control
             self.sim.release.put_in_pool(order=order)
             # next inter arrival time
