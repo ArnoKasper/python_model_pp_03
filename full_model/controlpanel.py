@@ -29,8 +29,8 @@ class ModelPanel(object):
                                 "earliness_cost",
                                 "tardiness_cost",
                                 'dd_setting',
-                                "o_min",
-                                'o_max'
+                                "v_min",
+                                'v_max'
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -183,9 +183,7 @@ class PolicyPanel(object):
         self.due_date_method: str = 'order_random'
         self.DD_constant_value: float = 55
         self.DD_random_min_max: List[int, int] = [45, 75]
-        o_min = self.params_dict['o_min']
-        o_max = self.params_dict['o_max']
-        self.DD_order_random_min_max: List[float, float] = [-2.75, 52.25]
+        self.DD_order_random_min_max: List[float, float] = [self.params_dict['v_min'], self.params_dict['v_max']]
         average_routing_length = (1 + len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)) / 2
         self.DD_total_work_content_value: float = self.DD_constant_value / average_routing_length
         self.DD_number_of_operations: float = self.DD_constant_value / average_routing_length
@@ -266,9 +264,10 @@ class PolicyPanel(object):
         self.sequencing_rule = 'PRD'
         self.sequencing_rule_attributes = POOL_RULE_ATTRIBUTES[self.sequencing_rule].copy()
         # set queueing estimate
-        L_s = self.sim.general_functions.station_planned_lead_time()
-        self.sequencing_rule_attributes['PRD_k'] = L_s
-        print(L_s)
+        L_M = self.sim.general_functions.station_planned_lead_time(
+            r_i=len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)/2)
+        self.sequencing_rule_attributes['PRD_k'] = L_M
+        print(L_M)
         # dispatching
         """
         dispatching rules available

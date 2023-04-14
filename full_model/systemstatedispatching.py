@@ -327,8 +327,7 @@ class SystemStateDispatching(object):
             elif self.sim.policy_panel.sequencing_rule == "EDD":
                 priority = order.due_date
             elif self.sim.policy_panel.rationing_rule == "PRD":
-                r = len(order.routing_sequence)
-                priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
+                priority = order.planned_release_time
             else:
                 raise Exception('no valid pool sequencing rule selected for IPD')
         elif condition == 'queue':

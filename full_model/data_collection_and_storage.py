@@ -75,7 +75,7 @@ class DataCollection(object):
             columns=['run'])
 
         # generic measures
-        number_of_machines_in_process = (len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT))
+        number_of_machines_in_process = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
         df[f"utilization"] = ((self.accumulated_process_time * 100 / number_of_machines_in_process)
                               / self.sim.model_panel.RUN_TIME)
         # order information
@@ -112,7 +112,8 @@ class DataCollection(object):
 
         # add key information
         df['reorder_point'] = self.sim.policy_panel.reorder_level
-        df['planned_station_lead_time'] = self.sim.general_functions.station_planned_lead_time()
+        df['planned_station_lead_time'] = self.sim.general_functions.station_planned_lead_time(
+            r_i=number_of_machines_in_process/2)
 
         # save data from the run
         if self.experiment_database is None:

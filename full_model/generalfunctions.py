@@ -156,29 +156,28 @@ class GeneralFunctions(object):
     def z_score(self, prob):
         return st.norm.ppf(prob)
 
-    def station_planned_lead_time(self):
+    def station_planned_lead_time(self, r_i):
         # expected station throughput time
-        mean_p = self.sim.model_panel.MEAN_PROCESS_TIME
-        mean_q = self.get_mean_q()
-        tau = mean_q + mean_p
+        mu_p = self.sim.model_panel.MEAN_PROCESS_TIME
+        mu_q = self.get_mean_q()
+        mu_t = mu_q + mu_p
 
         # standard deviation station throughput time
         rho = self.sim.model_panel.AIMED_UTILIZATION
-        mean_a = mean_p / rho
+        mean_a = mu_p / rho
         alpha = 1 / 0.5**2
         beta = 1/alpha * 1
         third_moment_estimate = alpha * (alpha + 1) * (alpha + 1) * beta**3
-        v_q = mean_q ** 2 + (mean_a * third_moment_estimate) / (3 * (1 - rho))
+        v_q = mu_q ** 2 + (mean_a * third_moment_estimate) / (3 * (1 - rho))
         v_p = 2/(1**2)
-        sigma_S = math.sqrt(v_q + v_p)
+        v_t = v_q + v_p
 
         # critical value
         c_e = self.sim.model_panel.earliness_cost
         c_t = self.sim.model_panel.tardiness_cost
         F_t = c_t / (c_t + c_e)
         z = self.z_score(prob=F_t)
-
-        return tau + z * sigma_S
+        return r_i*mu_t + z * math.sqrt(r_i*v_t)
 
     def get_expected_demand_during_supply_lead_time_theta(self, replenishment_type, a_min_max):
         mean_material_quantity = self.sim.model_panel.material_quantity
@@ -189,8 +188,6 @@ class GeneralFunctions(object):
 
         if replenishment_type == 'PoHed':
             L = self.sim.model_panel.expected_replenishment_time
-            m = len(self.sim.model_panel.MANUFACTURING_FLOOR_LAYOUT)
-            L_o = self.station_planned_lead_time()
             o_max = max(a_min_max)
             o_min = min(a_min_max)
             theta_A = delta_k * max(0, (L-o_max)) * (max(0, o_max)/o_max)  # early demand

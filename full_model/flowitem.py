@@ -147,9 +147,8 @@ class Order(object):
             self.wc_state[WC] = "NOT_PASSED"
 
         # planned lead time
-        L_s = self.sim.general_functions.station_planned_lead_time()
-        r_i = len(self.routing_sequence)
-        self.planned_manufacturing_lead_time = r_i * L_s
+        L_M_i = self.sim.general_functions.station_planned_lead_time(r_i=len(self.routing_sequence))
+        self.planned_manufacturing_lead_time = L_M_i
 
         # due date
         if self.sim.policy_panel.due_date_method == "random":
@@ -166,13 +165,13 @@ class Order(object):
             raise Exception("no valid due date procedure selected")
 
         # planned release time
-        self.planned_release_time = self.due_date - self.planned_manufacturing_lead_time
+        v_i = self.due_date - self.sim.env.now - self.planned_manufacturing_lead_time
+        self.planned_release_time = self.sim.env.now + max(0, v_i)
 
         # ORR pool sequence rule
         self.pool_priority = 0
         if self.sim.policy_panel.sequencing_rule in ["PRD"]:
-            self.pool_priority = self.due_date - (len(self.routing_sequence) *
-                                                  self.sim.policy_panel.sequencing_rule_attributes['PRD_k'])
+            self.pool_priority = self.planned_release_time
         if self.sim.policy_panel.dispatching_rule == "ODD_land":
             self.ODDs = {}
         return

@@ -152,7 +152,8 @@ class Generation(object):
     def pooled_hedging_input_check(self, order):
         for requirement in order.requirements:
             L_R_k = self.sim.model_panel.materials[requirement]['expected_lead_time']
-            o_i = order.planned_release_time - self.sim.env.now
+            # o_i = order.planned_release_time - self.sim.env.now
+            o_i = order.due_date - self.sim.env.now - order.planned_manufacturing_lead_time
             # check if this is early demand
             if o_i > L_R_k:
                 self.sim.env.process(self.pooled_hedging_early_demand(order=order, material_k=requirement))

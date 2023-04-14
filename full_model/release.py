@@ -112,8 +112,7 @@ class Release(object):
         elif self.sim.policy_panel.rationing_rule == "EDD":
             order.material_priority = order.due_date
         elif self.sim.policy_panel.rationing_rule == "PRD":
-            r = len(order.routing_sequence)
-            order.material_priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
+            order.material_priority = order.planned_release_time
         else:
             raise Exception('no valid rationing rule selected')
 
@@ -128,8 +127,7 @@ class Release(object):
         elif self.sim.policy_panel.sequencing_rule == "EDD":
             order.pool_priority = order.due_date
         elif self.sim.policy_panel.sequencing_rule == "PRD":
-            r = len(order.routing_sequence)
-            order.material_priority = order.due_date - r * self.sim.policy_panel.sequencing_rule_attributes['PRD_k']
+            order.material_priority = order.planned_release_time
         else:
             raise Exception('no valid pool sequencing rule selected')
         return
@@ -174,7 +172,8 @@ class Release(object):
             # update priorities
             self.set_pool_priority(order=order)
             # check materials
-            if self.sim.inventory.material_check(order=order):
+            material_check = self.sim.inventory.material_check(order=order)
+            if material_check:
                 # allow release
                 release_list.append(pool_item)
         # if there are no items ready in the pool
@@ -258,7 +257,7 @@ class Release(object):
             for work_centre in order.routing_sequence:
                 # contribute following aggregate load method Oosterman et al., 2000
                 self.sim.policy_panel.released[work_centre] += self.control_measure(order=order,
-                                                                                          work_centre=work_centre)
+                                                                                    work_centre=work_centre)
         elif self.tracking_variable in ['none', 'planned_release_time']:
             self.sim.policy_panel.released += 1
         else:
@@ -275,8 +274,8 @@ class Release(object):
         elif self.tracking_variable == 'work_centre':
             # contribute following aggregate load method Oosterman et al., 2000
             self.sim.policy_panel.completed[work_centre] += self.control_measure(order=order,
-                                                                                       work_centre=work_centre)
-        elif self.tracking_variable  in ['none', 'planned_release_time']:
+                                                                                 work_centre=work_centre)
+        elif self.tracking_variable in ['none', 'planned_release_time']:
             self.sim.policy_panel.completed += 1
         else:
             raise Exception('failed review the correct tracking variable for release')

@@ -23,14 +23,15 @@ cost_ratios_dict = {'high':         {'holding_cost': 0.25, 'WIP_cost': 1, 'earli
                     'super_low':    {'holding_cost': 0.25, 'WIP_cost': 1, 'earliness_cost': 0.5, 'tardiness_cost': 1.5}
                     }
 
-due_date_dict = {'main': {'o_min': -2.75, 'o_max': 52.25},
-                 'sensitivity': {'o_min': -2.75, 'o_max': 27.5}}
+due_date_dict = {'main': {'v_min': -2.75, 'v_max': 52.25},
+                 'sensitivity': {'v_min': -2.75, 'v_max': 27.5}}
 
 experimental_params_dict = []
 
 def get_interactions():
     #"""
     dd_setting = 'main'
+    cost_ratio = ['moderate', 'low', 'high']
     # BIL
     for m_complexity in material_complexity:
         for mat_all in material_allocation:
@@ -45,8 +46,8 @@ def get_interactions():
                     params_dict["material_replenishment"] = mat_repl
                     params_dict["release_target"] = None
                     params_dict["dd_setting"] = dd_setting
-                    params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-                    params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+                    params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+                    params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
                     params_dict["cost_ratio"] = cr
                     params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
                     params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -69,8 +70,8 @@ def get_interactions():
                         params_dict["material_replenishment"] = mat_repl
                         params_dict["release_target"] = T
                         params_dict["dd_setting"] = dd_setting
-                        params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-                        params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+                        params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+                        params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
                         params_dict["cost_ratio"] = cr
                         params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
                         params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -93,8 +94,8 @@ def get_interactions():
                         params_dict["material_replenishment"] = mat_repl
                         params_dict["release_target"] = T
                         params_dict["dd_setting"] = dd_setting
-                        params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-                        params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+                        params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+                        params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
                         params_dict["cost_ratio"] = cr
                         params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
                         params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -107,22 +108,23 @@ def get_interactions():
     #"""
     # sensitivity
     # IMM
+    cost_ratio = ['moderate', 'low', 'high', 'super_low']
     dd_setting = 'sensitivity'
     m_complexity = "multiple"
     cr = 'moderate'
     for mat_all in material_allocation:
         for mat_repl in material_replenishment:
             params_dict = dict()
-            params_dict["name"] = "MAR"
-            params_dict["release_technique"] = "immediate"
+            params_dict["name"] = "BIL"
+            params_dict["release_technique"] = "BIL"
             params_dict["material_complexity"] = m_complexity
             params_dict["material_complexity_dict"] = material_complexity_dict[m_complexity]
             params_dict["material_allocation"] = mat_all
             params_dict["material_replenishment"] = mat_repl
             params_dict["release_target"] = None
             params_dict["dd_setting"] = dd_setting
-            params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-            params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+            params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+            params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
             params_dict["cost_ratio"] = cr
             params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
             params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -142,8 +144,8 @@ def get_interactions():
             params_dict["material_replenishment"] = mat_repl
             params_dict["release_target"] = 47
             params_dict["dd_setting"] = dd_setting
-            params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-            params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+            params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+            params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
             params_dict["cost_ratio"] = cr
             params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
             params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -163,8 +165,8 @@ def get_interactions():
             params_dict["material_replenishment"] = mat_repl
             params_dict["release_target"] = 25
             params_dict["dd_setting"] = dd_setting
-            params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-            params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+            params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+            params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
             params_dict["cost_ratio"] = cr
             params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
             params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -176,16 +178,16 @@ def get_interactions():
     # test periodic values
     cr = 'base' # 'base' #
     params_dict = dict()
-    params_dict["name"] = "MAR"
-    params_dict["release_technique"] = "immediate"
+    params_dict["name"] = "BIL"
+    params_dict["release_technique"] = "BIL"
     params_dict["material_complexity"] = "moderate"
     params_dict["material_complexity_dict"] = material_complexity_dict["moderate"]
     params_dict["material_allocation"] = "HB"
     params_dict["material_replenishment"] = 'hierarchical'
     params_dict["release_target"] = None
     params_dict["dd_setting"] = dd_setting
-    params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-    params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+    params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+    params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
     params_dict["cost_ratio"] = cr
     params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
     params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -202,8 +204,8 @@ def get_interactions():
     params_dict["material_replenishment"] = 'hierarchical'
     params_dict["release_target"] = 47
     params_dict["dd_setting"] = dd_setting
-    params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-    params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+    params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+    params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
     params_dict["cost_ratio"] = cr
     params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
     params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -221,8 +223,8 @@ def get_interactions():
     params_dict["material_replenishment"] = 'intergral'
     params_dict["release_target"] = 25
     params_dict["dd_setting"] = dd_setting
-    params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-    params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+    params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+    params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
     params_dict["cost_ratio"] = cr
     params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
     params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]
@@ -244,8 +246,8 @@ def get_interactions():
     params_dict["material_replenishment"] = 'PoHed'
     params_dict["release_target"] = 25
     params_dict["dd_setting"] = dd_setting
-    params_dict["o_min"] = due_date_dict[dd_setting]["o_min"]
-    params_dict["o_max"] = due_date_dict[dd_setting]["o_max"]
+    params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
+    params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
     params_dict["cost_ratio"] = cr
     params_dict["holding_cost"] = cost_ratios_dict[cr]["holding_cost"]
     params_dict["WIP_cost"] = cost_ratios_dict[cr]["WIP_cost"]

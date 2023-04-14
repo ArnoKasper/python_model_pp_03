@@ -132,7 +132,11 @@ class Experiment_Manager(object):
         # find path for specific machine
         if machine_name == "LAPTOP-HN4N26LU":
             path = "C:/Users/Arno_ZenBook/Dropbox/Professioneel/Research/Results/test/"
+        elif machine_name[0:4] == "node":
+            # Habrok
+            path = "/home2/p288125/data/"
         elif machine_name[0:7] == "pg-node":
+            # Peregrine
             path = "/data/p288125/"
         elif machine_name in ["WKS033389", "WKS052605"]:
             path = "C:/Users/P288125/Dropbox/Professioneel/Research/Results/test/"
