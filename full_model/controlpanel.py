@@ -40,7 +40,7 @@ class ModelPanel(object):
         # simulation parameters
         self.WARM_UP_PERIOD: int = 5000  # warm-up period simulation model
         self.RUN_TIME: int = 10000  # run time simulation model
-        self.NUMBER_OF_RUNS: int = 150  # 5 # number of replications
+        self.NUMBER_OF_RUNS: int = 1#50  # 5 # number of replications
 
         # manufacturing process and order characteristics
         self.SHOP_ATTRIBUTES = {"work_centres": 6,
@@ -159,9 +159,12 @@ class ModelPanel(object):
         '''
         data collection types
             - main 
+            - order
             - periodic 
         '''
-        self.data_collection = 'main' # 'periodic' #
+        self.data_collection = 'periodic' #  'order' # 'main' #
+        if self.data_collection != 'main':
+            self.experiment_name = f'df_{self.data_collection}_' +self.experiment_name
         return
 
 
@@ -252,8 +255,10 @@ class PolicyPanel(object):
         what rule to use for DRACO
             - FOCUS (Kasper et al., 2022)
             - IPD: integrates a dispatching rule with 
+            - SINGLE: focus on pool rule
         """
-        self.ssd_rule = "IPD"
+        self.ssd_rule = "SINGLE"
+        # self.ssd_rule = "IPD"
 
         # tracking variables
         self.released = 0

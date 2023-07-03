@@ -127,7 +127,7 @@ class Release(object):
         elif self.sim.policy_panel.sequencing_rule == "EDD":
             order.pool_priority = order.due_date
         elif self.sim.policy_panel.sequencing_rule == "PRD":
-            order.material_priority = order.planned_release_time
+            order.pool_priority = order.planned_release_time
         else:
             raise Exception('no valid pool sequencing rule selected')
         return
@@ -419,7 +419,7 @@ class Release(object):
         :return:
         """
         # remove load
-        if completed and self.tracking_variable in ['total', 'none']:
+        if completed and self.tracking_variable in ['total', 'none', 'planned_release_time']:
             # only update load if order is completed
             self.contribute_completed(order=order)
         elif self.tracking_variable == 'work_centre':

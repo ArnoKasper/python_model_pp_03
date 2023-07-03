@@ -247,6 +247,11 @@ class SystemStateDispatching(object):
             else:
                 priority = self.IPD(order=order, condition='queue')
                 projected_impact = - priority
+        elif self.sim.policy_panel.ssd_rule == "SINGLE":
+            priority = self.IPD(order=order, condition='pool')
+            projected_impact = self.normalization(x=priority,
+                                                  x_min=self.IPD_pool_min,
+                                                  x_max=self.IPD_pool_max)
         else:
             raise Exception("no valid priority rule defined")
         return projected_impact
@@ -369,6 +374,8 @@ class SystemStateDispatching(object):
                     self.S_list.append(self.IPD(order=order, condition='pool'))
                 if order.release:
                     self.V_list.append(self.IPD(order=order, condition='queue'))
+            elif self.sim.policy_panel.ssd_rule == 'SINGLE':
+                self.S_list.append(self.IPD(order=order, condition='pool'))
 
         """ update all state variables """
         if not len(self.S_list) == 0:
@@ -385,7 +392,7 @@ class SystemStateDispatching(object):
         for order_list in self.sim.model_panel.POOLS.items:
             order = order_list[self.index_order_object]
             # collect dispatching/pool priority
-            if self.sim.policy_panel.ssd_rule == 'IPD':
+            if self.sim.policy_panel.ssd_rule in ['IPD', 'SINGLE']:
                 material_check = material in order.requirements
                 work_centre_check = order.routing_sequence[0] in starving_work_centres
                 if material_check and work_centre_check:

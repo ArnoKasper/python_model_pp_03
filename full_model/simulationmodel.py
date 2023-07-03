@@ -138,6 +138,12 @@ class SimulationModel(object):
         # vital simulation results are given
         run_number = int(self.env.now / (self.model_panel.WARM_UP_PERIOD + self.model_panel.RUN_TIME))
         index = run_number - 1
+
+        # ignore if data collection is not appropriate
+        if self.model_panel.data_collection != 'main':
+            print(f'run: {run_number} completed, no results are printed')
+            return
+
         # statistics
         try:
             statistics = self.replication_confidence_interval(run_number=run_number, criteria='mean_ttt')

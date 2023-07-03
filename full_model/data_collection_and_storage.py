@@ -40,7 +40,7 @@ class DataCollection(object):
         :param result_list:
         :return: void
         """
-        if self.sim.model_panel.data_collection == 'main':
+        if self.sim.model_panel.data_collection in ['main', 'order']:
             self.order_list.append(result_list)
         return
 
@@ -54,6 +54,8 @@ class DataCollection(object):
             # update database
             if self.sim.model_panel.data_collection == 'main':
                 self.store_run_data()
+            elif self.sim.model_panel.data_collection == 'order':
+                self.store_order_data()
             elif self.sim.model_panel.data_collection == 'periodic':
                 pass
             else:
@@ -159,4 +161,18 @@ class DataCollection(object):
             self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
         # clear list
         self.periodic_data = list()
+        return
+
+    def store_order_data(self):
+        # put all data into dataframe
+        df_run = pd.DataFrame(self.order_list)
+        df_run.columns = self.columns_names_run
+        # order information
+        df = df_run.loc[:, ("pool_time", "shop_throughput_time")]
+        # save data from the run
+        if self.experiment_database is None:
+            self.experiment_database = df
+            # self.experiment_database = df_run # save the entire run database
+        else:
+            self.experiment_database = pd.concat([self.experiment_database, df], ignore_index=True)
         return
