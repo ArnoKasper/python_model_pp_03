@@ -32,7 +32,7 @@ class ControlPanel(object):
         # experiment variables
         self.warmup_period = 3000
         self.run_time = 10000
-        self.number_of_runs = 100
+        self.number_of_runs = 10#0
 
         # shop layout
         self.order_pool = simpy.FilterStore(self.sim.env)
@@ -156,19 +156,21 @@ class DataControl(object):
         df["mean_lt"] = df_run.loc[:, "throughput_time"].mean()
         df["std_lt"] = df_run.loc[:, "throughput_time"].std()
 
-        est_mean = self.sim.general_functions.get_mean_manufacturing_lead_time()
-        est_stddev_mm1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mm1()
-        est_stddev_mg1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mg1()
-        df["est_mean_lt"] = est_mean
-        df["est_std_lt_mm1"] = est_stddev_mm1
-        df["est_std_lt_mg1"] = est_stddev_mg1
+        df = df_run
 
-        df["gap_mean_lt"] = (df_run.loc[:, "throughput_time"].mean() - est_mean) / df_run.loc[:, "throughput_time"].mean()
-        df["gap_std_lt_mm1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mm1) / df_run.loc[:, "throughput_time"].std()
-        df["gap_std_lt_mg1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mg1) / df_run.loc[:, "throughput_time"].std()
+        # est_mean = self.sim.general_functions.get_mean_manufacturing_lead_time()
+        # est_stddev_mm1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mm1()
+        #est_stddev_mg1 = self.sim.general_functions.get_std_dev_manufacturing_lead_time_mg1()
+        #df["est_mean_lt"] = est_mean
+        #df["est_std_lt_mm1"] = est_stddev_mm1
+        #df["est_std_lt_mg1"] = est_stddev_mg1
 
-        df["mean_operation_ttt"] = df_run.loc[:, "operation_ttt"].mean()
-        df["std_operation_ttt"] = df_run.loc[:, "operation_ttt"].std()
+        #df["gap_mean_lt"] = (df_run.loc[:, "throughput_time"].mean() - est_mean) / df_run.loc[:, "throughput_time"].mean()
+        #df["gap_std_lt_mm1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mm1) / df_run.loc[:, "throughput_time"].std()
+        #df["gap_std_lt_mg1"] = (df_run.loc[:, "throughput_time"].std() - est_stddev_mg1) / df_run.loc[:, "throughput_time"].std()
+
+        # df["mean_operation_ttt"] = df_run.loc[:, "operation_ttt"].mean()
+        # df["std_operation_ttt"] = df_run.loc[:, "operation_ttt"].std()
 
         # df["mean_pool_time"] = df_run.loc[:, "pool_time"].mean()
         #df["std_pool_time"] = df_run.loc[:, "pool_time"].std()
@@ -195,6 +197,33 @@ class DataControl(object):
         function that saves the database of the experiment
         :return: void
         """
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from scipy.stats import norm
+
+        mean = self.experiment_database.loc[:, "throughput_time"].mean()
+        std_dev = self.experiment_database.loc[:, "throughput_time"].std()
+        data = self.experiment_database.loc[:, "throughput_time"]
+
+        # Create a histogram
+        plt.hist(data, bins=50, density=True, alpha=0.6, color='skyblue', edgecolor='black')
+
+        # Create a probability density function (PDF) curve
+        x = np.linspace(-10, 150, 1000)
+        pdf = norm.pdf(x, mean, std_dev)
+        plt.plot(x, pdf, 'r', linewidth=2)
+
+        # Add labels and title
+        plt.xlabel('total throughput time')
+        plt.ylabel('Probability Density')
+        plt.title('Actual vs. Normal Distribution')
+
+        # Show the plot
+        plt.grid(True)
+        plt.legend(['PDF normal', 'Histogram empirical'])
+        plt.show()
+
+
         file = self._get_directory() + self.sim.control_panel.experiment_name + '.csv'
         self.experiment_database.to_csv(file, index=False)
         if self.sim.control_panel.print_info:

@@ -11,8 +11,8 @@ import time
 start_time = time.time()
 
 # set the range of the experiments that needs to be run
-lower_limit = 2
-upper_limit = 2
+lower_limit = 0
+upper_limit = 0
 
 # activate the simulation (automatic model)
 Experiment_Manager(lower_limit, upper_limit)

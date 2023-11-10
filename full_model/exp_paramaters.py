@@ -175,7 +175,7 @@ def get_interactions():
     # collect order data
     dd_setting = 'main'
     cost_ratio = 'moderate'
-    
+    """
     # hierarchical push
     params_dict = dict()
     params_dict["name"] = "BIL"
@@ -194,7 +194,7 @@ def get_interactions():
     params_dict["earliness_cost"] = cost_ratios_dict[cost_ratio]["earliness_cost"]
     params_dict["tardiness_cost"] = cost_ratios_dict[cost_ratio]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
-
+    """
     # hierarchical pull
     params_dict = dict()
     params_dict["name"] = "CONWIP"
@@ -203,7 +203,7 @@ def get_interactions():
     params_dict["material_complexity_dict"] = material_complexity_dict["multiple"]
     params_dict["material_allocation"] = "HB"
     params_dict["material_replenishment"] = 'ExHed'
-    params_dict["release_target"] = 47
+    params_dict["release_target"] = 42
     params_dict["dd_setting"] = dd_setting
     params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
     params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
@@ -213,7 +213,7 @@ def get_interactions():
     params_dict["earliness_cost"] = cost_ratios_dict[cost_ratio]["earliness_cost"]
     params_dict["tardiness_cost"] = cost_ratios_dict[cost_ratio]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
-
+    """
     # centralised integration
     params_dict = dict()
     params_dict["name"] = "BIL"
@@ -252,6 +252,7 @@ def get_interactions():
     params_dict["tardiness_cost"] = cost_ratios_dict[cost_ratio]["tardiness_cost"]
     experimental_params_dict.append(params_dict)
 
+    """
     """
     dd_setting = 'main'
     m_complexity = "multiple"

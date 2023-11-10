@@ -30,7 +30,8 @@ class DataCollection(object):
             'inventory_time',
             'material_present',
             'routing_length',
-            'number_of_materials'
+            'number_of_materials',
+            'schedule_accuracy'
         ]
         return
 
@@ -99,6 +100,7 @@ class DataCollection(object):
         df["mean_earliness"] = df_run.loc[:, "earliness"].mean()
         df["mean_squared_tardiness"] = (df_run.loc[:, "tardiness"] ** 2).mean()
         df["percentage_tardy"] = df_run.loc[:, "tardy"].sum() / df_run.shape[0]
+        df["schedule_accuracy"] = df_run.loc[:, "schedule_accuracy"].sum() / df_run.shape[0]
 
         # cost
         arrival_rate = 1 / self.sim.model_panel.MEAN_TIME_BETWEEN_ARRIVAL

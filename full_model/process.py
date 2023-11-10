@@ -284,6 +284,7 @@ class Process(object):
         df_list.append(order.material_present)
         df_list.append(len(order.routing_sequence_data))
         df_list.append(len(order.requirements))
+        df_list.append(max(0, self.heavenside(x=(order.release_time - order.planned_release_time))))
 
         # save list
         self.sim.data.append_run_list(result_list=df_list)
