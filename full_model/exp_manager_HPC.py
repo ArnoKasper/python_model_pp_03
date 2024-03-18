@@ -3,19 +3,17 @@ Project: ProcessSim
 Made By: Arno Kasper
 Version: 1.0.0
 """
-
+import sys
 from exp_manager import Experiment_Manager
 import time
 
 # track run time
 start_time = time.time()
 
-# set the range of the experiments that needs to be run
-lower_limit = 1
-upper_limit = 1
+experiment_number = int(sys.argv[1])
 
 # activate the simulation (automatic model)
-Experiment_Manager(lower_limit, upper_limit)
+Experiment_Manager(experiment_number, experiment_number)
 
 # provide essential experimental information
 t_time = (time.time() - start_time)

@@ -44,10 +44,10 @@ class GeneralFunctions(object):
         two erlang distribution
         :return: voi
         """
-        mean_process_time = mean * k
+        rate = mean * k
         return_value = 0
         for k in range(0, k):
-            return_value += self.random_generator.expovariate(mean_process_time)
+            return_value += self.random_generator.expovariate(rate)
         return return_value
 
     def two_erlang_truncated(self, mean):
@@ -157,27 +157,66 @@ class GeneralFunctions(object):
         return st.norm.ppf(prob)
 
     def station_planned_lead_time(self, r_i):
+        """
+        old procedure
+        alpha = 1 / 0.5**2      # shape ==  1/CV^2 process time distribution
+        beta = 1/alpha * mu_p   # scale ==  1/alpha * mean process time
+        # third_moment_estimate = alpha * (alpha + 1) * (alpha + 2) * beta**3 # without error
+        third_moment_estimate = alpha * (alpha + 1) * (alpha + 1) * beta**3
+        v_p = 2/(1**2)
+        v_q = mu_q ** 2 + (arrival_rate * third_moment_estimate) / (3 * (1 - utilization))
+        """
+        # see Kleinrock 1976, Volume II, eq. 1.82 & 1.87
         # expected station throughput time
+        utilization = self.sim.model_panel.AIMED_UTILIZATION
         mu_p = self.sim.model_panel.MEAN_PROCESS_TIME
-        mu_q = self.get_mean_q()
+
+        arrival_rate = utilization / mu_p
+        production_rate = 1 / mu_p
+
+        # moments processing time distribution
+        erlang_k = 2
+        rate = erlang_k / mu_p
+        var_p = erlang_k/(rate**2)
+        sigma_p = var_p ** (1/2)
+        skewness_p = 2 / erlang_k ** (1/2)
+
+        # second moment: # E[X^2] = Var(X) + [E(S)]^2
+        second_moment = var_p + mu_p ** 2
+        # third moment: E[X^2] = Skew(X) * [Std(X)]^3 + [E(S)]^3 + 3 * E(S) * Var(x)
+        third_moment = skewness_p * sigma_p ** 3 + mu_p ** 3 + 3 * mu_p * var_p
+
+        # expected station throughput time
+        '''
+        three options with the same outcome: 
+        mu_q = ((arrival_rate * second_moment)/2) / (1 - utilization)  # formulation Kleindorf
+        mu_q = (arrival_rate * second_moment) / (2 * (1 - arrival_rate * mu_p))  # formulation Ross
+        # reviewer proposal
+        r_1 = (second_moment / (1 + 1) * mu_p)
+        mu_q = utilization / (1 - utilization) * r_1
+        '''
+        mu_q = ((arrival_rate * second_moment)/2) / (1 - utilization)  # formulation Kleindorf
         mu_t = mu_q + mu_p
 
-        # standard deviation station throughput time
-        rho = self.sim.model_panel.AIMED_UTILIZATION
-        mean_a = mu_p / rho
-        alpha = 1 / 0.5**2
-        beta = 1/alpha * 1
-        third_moment_estimate = alpha * (alpha + 1) * (alpha + 1) * beta**3
-        v_q = mu_q ** 2 + (mean_a * third_moment_estimate) / (3 * (1 - rho))
-        v_p = 2/(1**2)
-        v_t = v_q + v_p
+        # station throughput time, assume independence
+        """
+        two options with the same outcome: 
+        var_q = mu_q ** 2 + (arrival_rate * third_moment) / (3 * (1 - utilization)) # formulation Kleindorf
+        r_1 = (second_moment / (1 + 1) * mu_p)
+        r_2 = (third_moment / (2 + 1) * mu_p)
+        # reviewer proposal
+        var_q = (utilization / (1 - utilization) ** 2) * (utilization * (r_1 ** 2) + (1 - utilization) * r_2)
+        """
+        var_q = mu_q ** 2 + (arrival_rate * third_moment) / (3 * (1 - utilization))  # formulation Kleindorf
+        var_t = var_p + var_q
 
         # critical value
         c_e = self.sim.model_panel.earliness_cost
         c_t = self.sim.model_panel.tardiness_cost
         F_t = c_t / (c_t + c_e)
         z = self.z_score(prob=F_t)
-        return r_i*mu_t + z * math.sqrt(r_i*v_t)
+        # print(3.5*mu_t + z * math.sqrt(3.5*var_t))
+        return r_i*mu_t + z * math.sqrt(r_i*var_t)
 
     def get_expected_demand_during_supply_lead_time_theta(self, replenishment_type, a_min_max):
         mean_material_quantity = self.sim.model_panel.material_quantity

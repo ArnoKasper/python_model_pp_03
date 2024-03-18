@@ -43,7 +43,7 @@ class ModelPanel(object):
         self.NUMBER_OF_RUNS: int = 150  # 5 # number of replications
 
         # manufacturing process and order characteristics
-        self.SHOP_ATTRIBUTES = {"work_centres": 6,
+        self.SHOP_ATTRIBUTES = {"work_centres": self.params_dict["stations"],
                                 'routing_configuration': "GFS"
                                 }
         # manufacturing system
@@ -72,7 +72,7 @@ class ModelPanel(object):
                                                  )
 
         # set inter arrival time
-        self.AIMED_UTILIZATION: float = 0.9
+        self.AIMED_UTILIZATION: float = self.params_dict["utilization"]
         self.MEAN_PROCESS_TIME: float = 1
         self.MEAN_TIME_BETWEEN_ARRIVAL = self.general_functions.arrival_time_calculator(
             wc_and_flow_config=self.SHOP_ATTRIBUTES['routing_configuration'],
@@ -162,7 +162,7 @@ class ModelPanel(object):
             - order
             - periodic 
         '''
-        self.data_collection = 'periodic' #  'order' # 'main' #
+        self.data_collection = 'main' # 'periodic' #  'order' #
         if self.data_collection != 'main':
             self.experiment_name = f'df_{self.data_collection}_' +self.experiment_name
         return
@@ -326,6 +326,9 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
                     'release_triggers': ['continuous', 'starvation_trigger']},
     'CONLOAD': {'tracking_variable': 'total',
                 'measure': 'workload',
+                'release_triggers': ['continuous']},
+    'CONexpLOAD': {'tracking_variable': 'total',
+                'measure': 'expected_load',
                 'release_triggers': ['continuous']},
     'pure_periodic_release': {'tracking_variable': 'work_centre',
                               'measure': 'workload',

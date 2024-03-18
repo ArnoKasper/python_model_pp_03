@@ -200,6 +200,8 @@ class Release(object):
             return 1
         elif self.measure == "workload" and work_centre is None:
             return sum(order.process_time_release.values())
+        elif self.measure == "expected_load" and work_centre is None:
+            return len(order.routing_sequence_data) * self.sim.model_panel.MEAN_PROCESS_TIME
         elif self.measure == "workload" and work_centre is not None:
             return order.process_time_release[work_centre] / (order.routing_sequence_data.index(work_centre) + 1)
         else:
