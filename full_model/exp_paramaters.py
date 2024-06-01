@@ -30,7 +30,7 @@ experimental_params_dict = []
 
 def get_interactions():
     cost_ratio = ['high', 'low', 'moderate']
-    # """
+    """
     dd_setting = 'main'
     # BIL
     for m_complexity in material_complexity:
@@ -188,9 +188,9 @@ def get_interactions():
                         params_dict["utilization"] = 0.9
                         params_dict["stations"] = 6
                         experimental_params_dict.append(params_dict)
-    # """
+    """
 
-    # """
+    """
     # set WIP paramters
     adj_CONWIP_WIP_target = [*range(36, 51), 52, 55, 50, 100]
     cost_ratio = ['moderate', 'low', 'high']
@@ -245,13 +245,13 @@ def get_interactions():
             params_dict["utilization"] = 0.9
             params_dict["stations"] = 6
             experimental_params_dict.append(params_dict)
-    # """
-    # """
+    """
+    """
     # testing variants
     dd_setting = 'main'
     cost_ratio = 'moderate'
     # hierarchical push
-    adj_CONWIP_WIP_target = [*range(36, 51), 52, 55, 50, 100]
+    adj_CONWIP_WIP_target = [*range(34, 51), 52, 55, 50, 100]
     for T in adj_CONWIP_WIP_target:
         params_dict = dict()
         params_dict["name"] = "testvariants"
@@ -273,15 +273,16 @@ def get_interactions():
         params_dict["stations"] = 6
         experimental_params_dict.append(params_dict)
 
+    adj_CONWIP_WIP_target = [*range(94, 130, 2), 135, 140, 150, 200]
     for T in adj_CONWIP_WIP_target:
         params_dict = dict()
         params_dict["name"] = "testvariants"
-        params_dict["release_technique"] = "CONLOAD"
+        params_dict["release_technique"] = "CONWL"
         params_dict["material_complexity"] = "multiple"
         params_dict["material_complexity_dict"] = material_complexity_dict["multiple"]
         params_dict["material_allocation"] = "HB"
         params_dict["material_replenishment"] = 'ExHed'
-        params_dict["release_target"] = int((T * 3.5) + 0.5)
+        params_dict["release_target"] = T
         params_dict["dd_setting"] = dd_setting
         params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
         params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
@@ -294,15 +295,16 @@ def get_interactions():
         params_dict["stations"] = 6
         experimental_params_dict.append(params_dict)
 
+    adj_CONWIP_WIP_target = [*range(94, 130, 2), 135, 140, 150, 200]
     for T in adj_CONWIP_WIP_target:
         params_dict = dict()
         params_dict["name"] = "testvariants"
-        params_dict["release_technique"] = "CONexpLOAD"
+        params_dict["release_technique"] = "CONRL"
         params_dict["material_complexity"] = "multiple"
         params_dict["material_complexity_dict"] = material_complexity_dict["multiple"]
         params_dict["material_allocation"] = "HB"
         params_dict["material_replenishment"] = 'ExHed'
-        params_dict["release_target"] = int((T * 3.5) + 0.5)
+        params_dict["release_target"] = T
         params_dict["dd_setting"] = dd_setting
         params_dict["v_min"] = due_date_dict[dd_setting]["v_min"]
         params_dict["v_max"] = due_date_dict[dd_setting]["v_max"]
@@ -314,8 +316,8 @@ def get_interactions():
         params_dict["utilization"] = 0.9
         params_dict["stations"] = 6
         experimental_params_dict.append(params_dict)
-    # """
-    # """
+    """
+    #"""
     # collect order data
     dd_setting = 'main'
     cost_ratio = 'moderate'
@@ -402,13 +404,13 @@ def get_interactions():
     params_dict["utilization"] = 0.9
     params_dict["stations"] = 6
     experimental_params_dict.append(params_dict)
-    # """
-    # """
+    #"""
+    """
     # collect order data
     dd_setting = 'main'
     cost_ratio = 'moderate'
     utilization = [0.80, 0.85, 0.9, 0.92]
-    stations = [6, 8, 10]
+    stations = [5, 6, 7]
     for until in utilization:
         for m in stations:
             # hierarchical push
@@ -494,7 +496,7 @@ def get_interactions():
             params_dict["utilization"] = until
             params_dict["stations"] = m
             experimental_params_dict.append(params_dict)
-    # """
+    """
     print(len(experimental_params_dict))
     return experimental_params_dict
 

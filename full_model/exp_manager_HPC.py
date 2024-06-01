@@ -21,7 +21,7 @@ t_hours = t_time // 60 // 60
 t_min = (t_time - (t_hours * 60 * 60)) // 60
 t_seconds = (t_time - (t_min * 60) - (t_hours * 60 * 60))
 
-print(f"\n\nExperiment {lower_limit} till {upper_limit} are finished"
+print(f"\n\nExperiment {experiment_number} is finished"
       f"\nThe total run time"
       f"\n\tHours:      {t_hours}"
       f"\n\tMinutes:    {t_min}"

@@ -198,10 +198,14 @@ class Release(object):
         """
         if self.measure == "WIP":
             return 1
-        elif self.measure == "workload" and work_centre is None:
+        elif self.measure == "direct_load" and work_centre is None:
             return sum(order.process_time_release.values())
+        elif self.measure == "direct_load" and work_centre is not None:
+            return order.process_time_release[work_centre]
         elif self.measure == "expected_load" and work_centre is None:
             return len(order.routing_sequence_data) * self.sim.model_panel.MEAN_PROCESS_TIME
+        elif self.measure == "expected_load" and work_centre is not None:
+            return self.sim.model_panel.MEAN_PROCESS_TIME
         elif self.measure == "workload" and work_centre is not None:
             return order.process_time_release[work_centre] / (order.routing_sequence_data.index(work_centre) + 1)
         else:
@@ -212,7 +216,7 @@ class Release(object):
         function that reviews if an order can be released
         """
         release = True
-        if self.tracking_variable == 'total':
+        if self.tracking_variable in ['total', 'remaining_total']:
             released = self.sim.policy_panel.released + self.control_measure(order=order)
             completed = self.sim.policy_panel.completed
             check = released - completed
@@ -252,7 +256,7 @@ class Release(object):
         """
         contribute order or load depending on the tracking viable
         """
-        if self.tracking_variable == 'total':
+        if self.tracking_variable in ['total', 'remaining_total']:
             # contribute
             self.sim.policy_panel.released += self.control_measure(order=order)
         elif self.tracking_variable == 'work_centre':
@@ -270,10 +274,11 @@ class Release(object):
         """
         contribute order or load depending on the tracking viable
         """
-        if self.tracking_variable == 'total':
+        if self.tracking_variable in ['total', 'remaining_total']:
             # contribute
-            self.sim.policy_panel.completed += self.control_measure(order=order)
-        elif self.tracking_variable == 'work_centre':
+            self.sim.policy_panel.completed += self.control_measure(order=order,
+                                                                    work_centre=work_centre)
+        elif self.tracking_variable in ['work_centre']:
             # contribute following aggregate load method Oosterman et al., 2000
             self.sim.policy_panel.completed[work_centre] += self.control_measure(order=order,
                                                                                  work_centre=work_centre)
@@ -424,7 +429,7 @@ class Release(object):
         if completed and self.tracking_variable in ['total', 'none', 'planned_release_time']:
             # only update load if order is completed
             self.contribute_completed(order=order)
-        elif self.tracking_variable == 'work_centre':
+        elif self.tracking_variable in ['work_centre', 'remaining_total']:
             # update tracking variable after each operation is completed
             self.contribute_completed(order=order, work_centre=work_centre)
         # activate release mechanism

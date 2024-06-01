@@ -3,6 +3,7 @@ import numpy as np
 import math
 import scipy.stats as st
 
+
 class GeneralFunctions(object):
     def __init__(self, simulation):
         self.sim = simulation
@@ -44,7 +45,7 @@ class GeneralFunctions(object):
         two erlang distribution
         :return: voi
         """
-        rate = mean * k
+        rate = k / mean
         return_value = 0
         for k in range(0, k):
             return_value += self.random_generator.expovariate(rate)
@@ -172,9 +173,8 @@ class GeneralFunctions(object):
         mu_p = self.sim.model_panel.MEAN_PROCESS_TIME
 
         arrival_rate = utilization / mu_p
-        production_rate = 1 / mu_p
 
-        # moments processing time distribution
+        # get moments processing time distribution
         erlang_k = 2
         rate = erlang_k / mu_p
         var_p = erlang_k/(rate**2)
@@ -183,9 +183,14 @@ class GeneralFunctions(object):
 
         # second moment: # E[X^2] = Var(X) + [E(S)]^2
         second_moment = var_p + mu_p ** 2
-        # third moment: E[X^2] = Skew(X) * [Std(X)]^3 + [E(S)]^3 + 3 * E(S) * Var(x)
+        # third moment: E[X^3] = Skew(X) * [Std(X)]^3 + [E(S)]^3 + 3 * E(S) * Var(x)
         third_moment = skewness_p * sigma_p ** 3 + mu_p ** 3 + 3 * mu_p * var_p
-
+        '''
+        from scipy.integrate import quad
+        def third_moment_generating_function(x):
+            return x ** 3 * st.erlang.pdf(x, erlang_k, scale=1 / rate)
+        third_moment = quad(third_moment_generating_function, 0, np.inf)
+        '''
         # expected station throughput time
         '''
         three options with the same outcome: 
@@ -251,3 +256,5 @@ class GeneralFunctions(object):
         stock_level = int(theta + z * sigma_L) + 1
         reorder_point = stock_level - 1
         return reorder_point
+
+

@@ -30,7 +30,9 @@ class ModelPanel(object):
                                 "tardiness_cost",
                                 'dd_setting',
                                 "v_min",
-                                'v_max'
+                                'v_max',
+                                "stations",
+                                "utilization"
                                 ]
         self.indexes = self.names_variables.copy()
         self.experiment_name: str = f'{self.project_name}_'
@@ -141,7 +143,7 @@ class ModelPanel(object):
             - k_erlang
                 need to define k
         """
-        self.DELIVERY = "supplier"  # "immediate"
+        self.DELIVERY = "supplier" # "immediate" #
         self.SUPPLY_DISTRIBUTION = 'constant' # 'normal'
         self.supply_k = 2
         self.supply_sigma = 10
@@ -162,7 +164,7 @@ class ModelPanel(object):
             - order
             - periodic 
         '''
-        self.data_collection = 'main' # 'periodic' #  'order' #
+        self.data_collection ='periodic' #  'order' # 'main' #
         if self.data_collection != 'main':
             self.experiment_name = f'df_{self.data_collection}_' +self.experiment_name
         return
@@ -324,10 +326,10 @@ RELEASE_TECHNIQUE_ATTRIBUTES = {
     'CONWIP_trig': {'tracking_variable': 'total',
                     'measure': 'WIP',
                     'release_triggers': ['continuous', 'starvation_trigger']},
-    'CONLOAD': {'tracking_variable': 'total',
-                'measure': 'workload',
+    'CONWL': {'tracking_variable': 'remaining_total',
+                'measure': 'direct_load',
                 'release_triggers': ['continuous']},
-    'CONexpLOAD': {'tracking_variable': 'total',
+    'CONRL': {'tracking_variable': 'remaining_total',
                 'measure': 'expected_load',
                 'release_triggers': ['continuous']},
     'pure_periodic_release': {'tracking_variable': 'work_centre',
